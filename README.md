@@ -60,7 +60,7 @@ Default keys:
 - `seed`: `42`
 - `level_max_time`: `90`
 
-A template file is provided at `/home/runner/work/Pac-Man/Pac-Man/config.example.json`.
+A template file is provided at `config.example.json`.
 
 ## Highscore
 Highscores are stored in JSON (`highscores.json` by default).
@@ -90,9 +90,9 @@ This structure is intended to extend cleanly with future gameplay modules
 
 ## Project Management
 Project-management evidence should be stored in:
-- `/home/runner/work/Pac-Man/Pac-Man/project_management/`
+- `project_management/`
 
-See `/home/runner/work/Pac-Man/Pac-Man/project_management/README.md` for scope.
+See `project_management/README.md` for scope.
 
 ## Resources
 - 42 project subject (Pacman: Ghosts! More ghosts!)
