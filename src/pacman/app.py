@@ -5,9 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+import arcade
+
 from pacman.config import load_config
 from pacman.highscore import load_highscores
 from mazegenerator import MazeGenerator
+
+from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
 
 
 USAGE = "Usage: python3 pac-man.py config.json"
@@ -53,4 +57,17 @@ def main(argv: list[str] | None = None) -> int:
         # print hexadecimal values for better visualization
         print("".join(f"{cell:2X}" for cell in row))
     print(f"Shortest path length: {shortest_path}")
+
+    # Create a window class. This is what actually shows up on screen
+    window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
+
+    # Create and setup the GameView
+    game = GameView()
+
+    # Show GameView on screen
+    window.show_view(game)
+
+    # Start the arcade game loop
+    arcade.run()
+
     return 0
