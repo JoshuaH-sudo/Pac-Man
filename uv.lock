@@ -176,6 +176,14 @@ wheels = [
 ]
 
 [[package]]
+name = "mazegenerator"
+version = "2.0.2"
+source = { path = "mazegenerator-00001-py3-none-any.whl" }
+wheels = [
+    { filename = "mazegenerator-1-py3-none-any.whl", hash = "sha256:88b5b212ae1a90faa8aa6f8518abe6968a30be071cddbdd02f8c52c6936c209e" },
+]
+
+[[package]]
 name = "mccabe"
 version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
@@ -265,6 +273,9 @@ wheels = [
 name = "pacman"
 version = "0.1.0"
 source = { editable = "." }
+dependencies = [
+    { name = "mazegenerator" },
+]
 
 [package.dev-dependencies]
 dev = [
@@ -274,6 +285,7 @@ dev = [
 ]
 
 [package.metadata]
+requires-dist = [{ name = "mazegenerator", path = "mazegenerator-00001-py3-none-any.whl" }]
 
 [package.metadata.requires-dev]
 dev = [
