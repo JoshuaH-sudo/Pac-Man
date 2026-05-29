@@ -7,6 +7,10 @@ This repository contains a UV-managed Python skeleton for the 42 Pac-Man project
 It sets up package structure, configuration loading, highscore persistence, CLI entrypoint,
 and the required quality tooling (flake8 + mypy) to support iterative game implementation.
 
+## Project Management
+Project management evidence is stored in `project_management/`
+Link to Trello board: https://trello.com/b/ltiY3yB4/pac-man-42-project
+
 ## Instructions
 ### Requirements
 - Python 3.10+
