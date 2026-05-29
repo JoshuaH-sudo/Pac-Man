@@ -62,7 +62,7 @@ def main(argv: list[str] | None = None) -> int:
     window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
 
     # Create and setup the GameView
-    game = GameView()
+    game = GameView(maze_grid)
 
     # Show GameView on screen
     window.show_view(game)
