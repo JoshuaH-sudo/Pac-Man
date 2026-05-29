@@ -1,0 +1,7 @@
+Other groups projects:
+pygame:
+https://github.com/Prashant-Bharaj/pac-man/tree/main/src
+https://github.com/Destrigo/42_New_Curriculum/tree/main/milestone_4/pac_man
+arcade:
+https://github.com/sousampere/42_pacman/tree/main
+https://github.com/Overtekk/PacMan/tree/main
