@@ -28,14 +28,26 @@ def _load_2x2_textures(sheet_path: Path) -> list[arcade.Texture]:
 class Item(arcade.Sprite):
     """Collectible pacgum sprite that loops through a 2x2 animation."""
 
-    def __init__(self, center_x: float, center_y: float, scale: float = 1.0):
+    def __init__(
+        self,
+        center_x: float,
+        center_y: float,
+        scale: float = 1.0,
+        animation_fps: float = 8.0,
+    ):
         textures = _load_2x2_textures(ITEM_SHEET_PATH)
         super().__init__(textures[0], scale=scale, center_x=center_x, center_y=center_y)
         self._textures = textures
         self._frame_index = 0
+        self._animation_interval = 1.0 / max(0.1, animation_fps)
+        self._animation_elapsed = 0.0
 
     def update_animation(self, delta_time: float = 1 / 60) -> None:
-        del delta_time
+        self._animation_elapsed += delta_time
+        if self._animation_elapsed < self._animation_interval:
+            return
+
+        self._animation_elapsed %= self._animation_interval
         self._frame_index = (self._frame_index + 1) % len(self._textures)
         self.texture = self._textures[self._frame_index]
 
@@ -60,6 +72,10 @@ class Player(arcade.Sprite):
         """Set intended movement direction for the current update loop."""
         self.change_x = horizontal * self._speed
         self.change_y = vertical * self._speed
+
+    def set_speed(self, speed: float) -> None:
+        """Update movement speed in pixels per frame."""
+        self._speed = speed
 
     def update_animation(self, delta_time: float = 1 / 60) -> None:
         del delta_time
