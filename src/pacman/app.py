@@ -5,8 +5,13 @@ from __future__ import annotations
 from pathlib import Path
 import sys
 
+import arcade
+
 from pacman.config import load_config
 from pacman.highscore import load_highscores
+from mazegenerator import MazeGenerator
+
+from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
 
 
 USAGE = "Usage: python3 pac-man.py config.json"
@@ -38,4 +43,31 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Config source: {config_path}")
     print(f"Configured lives: {config.lives}")
     print(f"Loaded highscores: {len(highscores)}")
+
+    # Create a simple 20x20 maze
+    maze_gen = MazeGenerator(size=(20, 20))
+
+    # Get the maze structure
+    maze_grid = maze_gen.maze
+    shortest_path = maze_gen.shortest_path
+
+    print(f"Maze dimensions: {len(maze_grid[0])}x{len(maze_grid)}")
+    print(f"Entry: {maze_gen.maze_entry}, Exit: {maze_gen.maze_exit}")
+    for row in maze_grid:
+        # print hexadecimal values for better visualization
+        print("".join(f"{cell:2X}" for cell in row))
+    print(f"Shortest path length: {shortest_path}")
+
+    # Create a window class. This is what actually shows up on screen
+    window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
+
+    # Create and setup the GameView
+    game = GameView(maze_grid)
+
+    # Show GameView on screen
+    window.show_view(game)
+
+    # Start the arcade game loop
+    arcade.run()
+
     return 0

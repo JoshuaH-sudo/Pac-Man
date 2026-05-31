@@ -4,7 +4,10 @@ version = "0.1.0"
 description = "Skeleton Pac-Man project following 42 guidelines"
 readme = "README.md"
 requires-python = ">=3.10"
-dependencies = []
+dependencies = [
+    "arcade>=3.3.3",
+    "mazegenerator",
+]
 
 [project.scripts]
 pacman = "pacman.app:main"
@@ -28,3 +31,6 @@ warn_unused_ignores = true
 disallow_untyped_defs = true
 check_untyped_defs = true
 exclude = "(^\\.venv/|^build/|^dist/)"
+
+[tool.uv.sources]
+mazegenerator = { path = "mazegenerator-00001-py3-none-any.whl" }

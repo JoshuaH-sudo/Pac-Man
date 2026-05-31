@@ -1,25 +1,28 @@
 .PHONY: install run debug clean lint lint-strict test
 
+# Using UV_SKIP_WHEEL_FILENAME_CHECK=1 to work around a known issue with uv and certain wheel filenames.
+UV = UV_SKIP_WHEEL_FILENAME_CHECK=1 uv
+
 install:
-	uv sync --all-groups
+	$(UV) sync --all-groups
 
 run:
-	uv run python pac-man.py config.example.json
+	$(UV) run python pac-man.py config.example.json
 
 debug:
-	uv run python -m pdb pac-man.py config.example.json
+	$(UV) run python -m pdb pac-man.py config.example.json
 
 clean:
 	find . -type d \( -name '__pycache__' -o -name '.mypy_cache' -o -name '.pytest_cache' \) -prune -exec rm -rf {} +
 	find . -type f \( -name '*.pyc' -o -name '*.pyo' \) -delete
 
 lint:
-	uv run flake8 .
-	uv run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
+	$(UV) run flake8 .
+	$(UV) run mypy . --warn-return-any --warn-unused-ignores --ignore-missing-imports --disallow-untyped-defs --check-untyped-defs
 
 lint-strict:
-	uv run flake8 .
-	uv run mypy . --strict
+	$(UV) run flake8 .
+	$(UV) run mypy . --strict
 
 test:
-	uv run pytest -q
+	$(UV) run pytest -q
