@@ -6,6 +6,9 @@ from dataclasses import dataclass
 from typing import Sequence
 
 import arcade
+from arcade.types import Color
+
+from pacman.entities import Item, Player
 
 WINDOW_WIDTH = 1024
 WINDOW_HEIGHT = 768
@@ -15,6 +18,8 @@ CLOSED_NORTH = 0b0001
 CLOSED_EAST = 0b0010
 CLOSED_SOUTH = 0b0100
 CLOSED_WEST = 0b1000
+
+PLAYER_MOVEMENT_SPEED = 10
 
 GridPoint = tuple[int, int]
 WallSegment = tuple[GridPoint, GridPoint]
@@ -88,7 +93,7 @@ class MazeDisplay:
         self,
         maze_grid: Sequence[Sequence[int]],
         margin: float = 40.0,
-        wall_color: arcade.Color = arcade.color.ALICE_BLUE,
+        wall_color: Color = arcade.color.ALICE_BLUE,
         wall_width: float = 2.0,
     ) -> None:
         self._point_grid = MazePointGrid.from_maze_grid(maze_grid)
@@ -144,6 +149,28 @@ class GameView(arcade.View):
     def __init__(self, maze_grid: Sequence[Sequence[int]]):
         super().__init__()
         self._maze_display = MazeDisplay(maze_grid)
+        self._player = Player(
+            center_x=WINDOW_WIDTH / 2,
+            center_y=WINDOW_HEIGHT / 2,
+            speed=PLAYER_MOVEMENT_SPEED,
+            scale=2.0,
+        )
+        self._players: arcade.SpriteList = arcade.SpriteList()
+        self._players.append(self._player)
+
+        self._items: arcade.SpriteList = arcade.SpriteList()
+        self._items.append(
+            Item(
+                center_x=(WINDOW_WIDTH / 2) + 96,
+                center_y=(WINDOW_HEIGHT / 2) + 96,
+                scale=1.5,
+            )
+        )
+
+        self._move_left = False
+        self._move_right = False
+        self._move_up = False
+        self._move_down = False
 
     def on_show_view(self) -> None:
         arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
@@ -151,3 +178,55 @@ class GameView(arcade.View):
     def on_draw(self) -> None:
         self.clear()
         self._maze_display.draw(self.window.width, self.window.height)
+        self._items.draw()
+        self._players.draw()
+
+    def on_update(self, delta_time: float) -> None:
+        del delta_time
+        self._apply_player_movement()
+        self._players.update()
+        self._players.update_animation()
+        self._items.update_animation()
+        self._keep_player_on_screen()
+
+    def on_key_press(self, symbol: int, modifiers: int) -> None:
+        del modifiers
+        if symbol in (arcade.key.LEFT, arcade.key.A):
+            self._move_left = True
+        if symbol in (arcade.key.RIGHT, arcade.key.D):
+            self._move_right = True
+        if symbol in (arcade.key.UP, arcade.key.W):
+            self._move_up = True
+        if symbol in (arcade.key.DOWN, arcade.key.S):
+            self._move_down = True
+
+    def on_key_release(self, symbol: int, modifiers: int) -> None:
+        del modifiers
+        if symbol in (arcade.key.LEFT, arcade.key.A):
+            self._move_left = False
+        if symbol in (arcade.key.RIGHT, arcade.key.D):
+            self._move_right = False
+        if symbol in (arcade.key.UP, arcade.key.W):
+            self._move_up = False
+        if symbol in (arcade.key.DOWN, arcade.key.S):
+            self._move_down = False
+
+    def _apply_player_movement(self) -> None:
+        horizontal = int(self._move_right) - int(self._move_left)
+        vertical = int(self._move_up) - int(self._move_down)
+        self._player.move(horizontal=horizontal, vertical=vertical)
+
+    def _keep_player_on_screen(self) -> None:
+        width = self.window.width
+        height = self.window.height
+        half_w = self._player.width / 2
+        half_h = self._player.height / 2
+
+        self._player.center_x = max(
+            half_w,
+            min(width - half_w, self._player.center_x),
+        )
+        self._player.center_y = max(
+            half_h,
+            min(height - half_h, self._player.center_y),
+        )
