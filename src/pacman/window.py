@@ -23,9 +23,15 @@ PLAYER_MOVEMENT_SPEED = 10
 PLAYER_CELL_FRACTION = 0.9
 ITEM_CELL_FRACTION = 0.45
 PACGUM_ANIMATION_FPS = 8.0
+MAZE_MARGIN = 12.0
+PLAYER_SPEED_RATIO = 0.09
+MAX_COLLISION_WALL_THICKNESS = 4.0
+COLLISION_WALL_THICKNESS_RATIO = 0.08
 
 GridPoint = tuple[int, int]
 WallSegment = tuple[GridPoint, GridPoint]
+WallCollider = tuple[float, float, float, float]
+Direction = tuple[int, int]
 
 
 @dataclass(frozen=True)
@@ -89,13 +95,96 @@ def _normalize_segment(start: GridPoint, end: GridPoint) -> WallSegment:
     return (start, end) if start <= end else (end, start)
 
 
+def _center_cell_index(cell_count: int) -> int:
+    """Return the nearest discrete center cell index for a maze axis."""
+    return max(0, (cell_count - 1) // 2)
+
+
+def _choose_initial_direction(cell_value: int) -> Direction:
+    """Pick the first open direction in reading order for a maze cell."""
+    if _direction_is_open(cell_value, (0, 1)):
+        return (0, 1)
+    if _direction_is_open(cell_value, (1, 0)):
+        return (1, 0)
+    if _direction_is_open(cell_value, (-1, 0)):
+        return (-1, 0)
+    if _direction_is_open(cell_value, (0, -1)):
+        return (0, -1)
+    return (0, 0)
+
+
+def _direction_is_open(cell_value: int, direction: Direction) -> bool:
+    """Return whether a maze cell allows travel in the given direction."""
+    if direction == (0, 1):
+        return not bool(cell_value & CLOSED_NORTH)
+    if direction == (1, 0):
+        return not bool(cell_value & CLOSED_EAST)
+    if direction == (0, -1):
+        return not bool(cell_value & CLOSED_SOUTH)
+    if direction == (-1, 0):
+        return not bool(cell_value & CLOSED_WEST)
+    return False
+
+
+def _nearest_cell_center(
+    coordinate: float,
+    offset: float,
+    cell_size: float,
+) -> float:
+    """Return the nearest maze cell center coordinate for a screen axis."""
+    cell_index = round((coordinate - offset) / cell_size - 0.5)
+    return offset + (cell_index + 0.5) * cell_size
+
+
+def _resolve_player_direction(
+    current_direction: Direction,
+    desired_direction: Direction,
+    center_x: float,
+    center_y: float,
+    cell_size: float,
+    offset_x: float,
+    offset_y: float,
+) -> tuple[Direction, float, float]:
+    """Keep travel axis-aligned and snap turns onto the cell grid."""
+    alignment_tolerance = max(1.0, cell_size * 0.25)
+    next_direction = current_direction or desired_direction
+    snapped_x = center_x
+    snapped_y = center_y
+
+    if next_direction[0] != 0:
+        lane_y = _nearest_cell_center(center_y, offset_y, cell_size)
+        if abs(center_y - lane_y) <= alignment_tolerance:
+            snapped_y = lane_y
+            if desired_direction[1] != 0:
+                turn_x = _nearest_cell_center(center_x, offset_x, cell_size)
+                if abs(center_x - turn_x) <= alignment_tolerance:
+                    snapped_x = turn_x
+                    next_direction = desired_direction
+            elif desired_direction[0] != 0:
+                next_direction = desired_direction
+
+    elif next_direction[1] != 0:
+        lane_x = _nearest_cell_center(center_x, offset_x, cell_size)
+        if abs(center_x - lane_x) <= alignment_tolerance:
+            snapped_x = lane_x
+            if desired_direction[0] != 0:
+                turn_y = _nearest_cell_center(center_y, offset_y, cell_size)
+                if abs(center_y - turn_y) <= alignment_tolerance:
+                    snapped_y = turn_y
+                    next_direction = desired_direction
+            elif desired_direction[1] != 0:
+                next_direction = desired_direction
+
+    return next_direction, snapped_x, snapped_y
+
+
 class MazeDisplay:
     """Render maze walls from a point-grid onto an Arcade view."""
 
     def __init__(
         self,
         maze_grid: Sequence[Sequence[int]],
-        margin: float = 40.0,
+        margin: float = MAZE_MARGIN,
         wall_color: Color = arcade.color.ALICE_BLUE,
         wall_width: float = 2.0,
     ) -> None:
@@ -127,6 +216,50 @@ class MazeDisplay:
                 self._wall_color,
                 self._wall_width,
             )
+
+    def wall_colliders(
+        self,
+        window_width: int,
+        window_height: int,
+    ) -> tuple[WallCollider, ...]:
+        """Return wall-aligned collision boxes for the current window size."""
+        cell_size, offset_x, offset_y = self.layout_for_window(
+            window_width,
+            window_height,
+        )
+        thickness = max(
+            1.0,
+            min(
+                max(self._wall_width * 2.0, 1.0),
+                cell_size * COLLISION_WALL_THICKNESS_RATIO,
+                MAX_COLLISION_WALL_THICKNESS,
+            ),
+        )
+        colliders: list[WallCollider] = []
+
+        for (start_x, start_y), (end_x, end_y) in self._point_grid.wall_segments:
+            if start_x == end_x:
+                colliders.append(
+                    (
+                        offset_x + start_x * cell_size,
+                        window_height
+                        - (offset_y + ((start_y + end_y) * cell_size / 2.0)),
+                        thickness,
+                        abs(end_y - start_y) * cell_size + thickness,
+                    )
+                )
+                continue
+
+            colliders.append(
+                (
+                    offset_x + ((start_x + end_x) * cell_size / 2.0),
+                    window_height - (offset_y + start_y * cell_size),
+                    abs(end_x - start_x) * cell_size + thickness,
+                    thickness,
+                )
+            )
+
+        return tuple(colliders)
 
     @property
     def rows(self) -> int:
@@ -177,14 +310,19 @@ class GameView(arcade.View):
 
     def __init__(self, maze_grid: Sequence[Sequence[int]]):
         super().__init__()
+        self._maze_grid = tuple(tuple(int(cell) for cell in row) for row in maze_grid)
         self._maze_display = MazeDisplay(maze_grid)
-        self._player_cell_x = self._maze_display.cols / 2.0
-        self._player_cell_y = self._maze_display.rows / 2.0
+        self._player_cell_x = _center_cell_index(self._maze_display.cols)
+        self._player_cell_y = _center_cell_index(self._maze_display.rows)
         self._item_cell_x = min(
             self._maze_display.cols - 1,
-            int(self._player_cell_x) + 2,
+            self._player_cell_x + 2,
         )
-        self._item_cell_y = max(0, int(self._player_cell_y) - 2)
+        self._item_cell_y = max(0, self._player_cell_y - 2)
+
+        center_cell_value = int(
+            maze_grid[self._player_cell_y][self._player_cell_x]
+        )
 
         self._player = Pacman(
             center_x=0.0,
@@ -194,6 +332,8 @@ class GameView(arcade.View):
         )
         self._players: arcade.SpriteList = arcade.SpriteList()
         self._players.append(self._player)
+        self._walls: arcade.SpriteList = arcade.SpriteList(use_spatial_hash=True)
+        self._physics_engine: arcade.PhysicsEngineSimple | None = None
 
         self._items: arcade.SpriteList = arcade.SpriteList()
         self._items.append(
@@ -205,10 +345,8 @@ class GameView(arcade.View):
             )
         )
 
-        self._move_left = False
-        self._move_right = False
-        self._move_up = False
-        self._move_down = False
+        self._current_direction = _choose_initial_direction(center_cell_value)
+        self._desired_direction = self._current_direction
 
     def on_show_view(self) -> None:
         arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
@@ -226,37 +364,61 @@ class GameView(arcade.View):
 
     def on_update(self, delta_time: float) -> None:
         self._apply_player_movement()
-        self._players.update()
+        if self._physics_engine is None:
+            self._players.update()
+        else:
+            self._physics_engine.update()
+        self._keep_player_on_lane()
         self._players.update_animation(delta_time=delta_time)
         self._items.update_animation(delta_time=delta_time)
         self._keep_player_on_screen()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         del modifiers
+        next_direction: Direction | None = None
         if symbol in (arcade.key.LEFT, arcade.key.A):
-            self._move_left = True
+            next_direction = (-1, 0)
         if symbol in (arcade.key.RIGHT, arcade.key.D):
-            self._move_right = True
+            next_direction = (1, 0)
         if symbol in (arcade.key.UP, arcade.key.W):
-            self._move_up = True
+            next_direction = (0, 1)
         if symbol in (arcade.key.DOWN, arcade.key.S):
-            self._move_down = True
+            next_direction = (0, -1)
+
+        if next_direction is None or self.window is None:
+            return
+
+        cell_value = self._current_cell_value()
+        if _direction_is_open(cell_value, next_direction):
+            self._desired_direction = next_direction
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
-        if symbol in (arcade.key.LEFT, arcade.key.A):
-            self._move_left = False
-        if symbol in (arcade.key.RIGHT, arcade.key.D):
-            self._move_right = False
-        if symbol in (arcade.key.UP, arcade.key.W):
-            self._move_up = False
-        if symbol in (arcade.key.DOWN, arcade.key.S):
-            self._move_down = False
+        del symbol
 
     def _apply_player_movement(self) -> None:
-        horizontal = int(self._move_right) - int(self._move_left)
-        vertical = int(self._move_up) - int(self._move_down)
-        self._player.move(horizontal=horizontal, vertical=vertical)
+        if self.window is None:
+            return
+
+        cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
+            self.window.width,
+            self.window.height,
+        )
+        self._current_direction, self._player.center_x, self._player.center_y = (
+            _resolve_player_direction(
+                self._current_direction,
+                self._desired_direction,
+                self._player.center_x,
+                self._player.center_y,
+                cell_size,
+                offset_x,
+                offset_y,
+            )
+        )
+        self._player.move(
+            horizontal=self._current_direction[0],
+            vertical=self._current_direction[1],
+        )
 
     def _keep_player_on_screen(self) -> None:
         width = self.window.width
@@ -286,13 +448,19 @@ class GameView(arcade.View):
             (cell_size * PLAYER_CELL_FRACTION)
             / max(1.0, float(self._player.texture.width))
         )
-        self._player.set_speed(cell_size * 0.18)
+        self._player.set_speed(cell_size * PLAYER_SPEED_RATIO)
         self._player.center_x, self._player.center_y = self._maze_display.cell_center(
             self.window.width,
             self.window.height,
-            self._player_cell_x,
-            self._player_cell_y,
+            float(self._player_cell_x),
+            float(self._player_cell_y),
         )
+        self._rebuild_wall_colliders()
+        center_cell_value = int(
+            self._maze_grid[self._player_cell_y][self._player_cell_x]
+        )
+        self._current_direction = _choose_initial_direction(center_cell_value)
+        self._desired_direction = self._current_direction
 
         for item in self._items:
             item.scale = (
@@ -305,3 +473,62 @@ class GameView(arcade.View):
                 self._item_cell_x,
                 self._item_cell_y,
             )
+
+    def _keep_player_on_lane(self) -> None:
+        """Snap the perpendicular axis to the maze cell center line."""
+        if self.window is None:
+            return
+
+        cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
+            self.window.width,
+            self.window.height,
+        )
+        if self._current_direction[0] != 0:
+            self._player.center_y = _nearest_cell_center(
+                self._player.center_y,
+                offset_y,
+                cell_size,
+            )
+        elif self._current_direction[1] != 0:
+            self._player.center_x = _nearest_cell_center(
+                self._player.center_x,
+                offset_x,
+                cell_size,
+            )
+
+    def _current_cell_value(self) -> int:
+        """Return wall flags for the maze cell currently containing the player."""
+        if self.window is None:
+            return int(self._maze_grid[self._player_cell_y][self._player_cell_x])
+
+        cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
+            self.window.width,
+            self.window.height,
+        )
+        cell_x = int((self._player.center_x - offset_x) / cell_size)
+        cell_y = int(((self.window.height - self._player.center_y) - offset_y) / cell_size)
+        cell_x = max(0, min(self._maze_display.cols - 1, cell_x))
+        cell_y = max(0, min(self._maze_display.rows - 1, cell_y))
+        return int(self._maze_grid[cell_y][cell_x])
+
+    def _rebuild_wall_colliders(self) -> None:
+        """Recreate collision sprites so walls match the current maze layout."""
+        if self.window is None:
+            return
+
+        walls: arcade.SpriteList = arcade.SpriteList(use_spatial_hash=True)
+        for center_x, center_y, width, height in self._maze_display.wall_colliders(
+            self.window.width,
+            self.window.height,
+        ):
+            wall = arcade.SpriteSolidColor(
+                max(1, round(width)),
+                max(1, round(height)),
+                color=(0, 0, 0, 0),
+            )
+            wall.center_x = center_x
+            wall.center_y = center_y
+            walls.append(wall)
+
+        self._walls = walls
+        self._physics_engine = arcade.PhysicsEngineSimple(self._player, self._walls)

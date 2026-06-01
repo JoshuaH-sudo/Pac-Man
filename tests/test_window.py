@@ -1,0 +1,81 @@
+"""Tests for maze wall rendering and movement geometry."""
+
+from pacman.window import (
+    CLOSED_EAST,
+    CLOSED_NORTH,
+    CLOSED_SOUTH,
+    CLOSED_WEST,
+    MazeDisplay,
+    _choose_initial_direction,
+    _center_cell_index,
+    _direction_is_open,
+    _nearest_cell_center,
+    _resolve_player_direction,
+)
+
+
+def test_center_cell_index_prefers_discrete_middle_cell() -> None:
+    """Maze spawn logic should always choose a valid center cell index."""
+    assert _center_cell_index(21) == 10
+    assert _center_cell_index(20) == 9
+
+
+def test_choose_initial_direction_prefers_open_north_path() -> None:
+    """Initial movement should select the first open direction for a cell."""
+    assert _choose_initial_direction(CLOSED_EAST | CLOSED_SOUTH) == (0, 1)
+
+
+def test_direction_is_open_respects_wall_flags() -> None:
+    """Blocked walls should reject direction requests immediately."""
+    blocked_all_but_west = CLOSED_NORTH | CLOSED_EAST | CLOSED_SOUTH
+    assert _direction_is_open(blocked_all_but_west, (-1, 0))
+    assert not _direction_is_open(blocked_all_but_west, (0, 1))
+    assert not _direction_is_open(blocked_all_but_west, (1, 0))
+    assert not _direction_is_open(blocked_all_but_west, (0, -1))
+
+    blocked_west = CLOSED_WEST
+    assert not _direction_is_open(blocked_west, (-1, 0))
+
+
+def test_nearest_cell_center_snaps_to_lane_center() -> None:
+    """Lane snapping should align to the nearest maze center line."""
+    snapped = _nearest_cell_center(58.0, offset=10.0, cell_size=20.0)
+    assert snapped == 60.0
+
+
+def test_resolve_player_direction_turns_when_aligned() -> None:
+    """A perpendicular turn should apply once the player is near lane center."""
+    direction, center_x, center_y = _resolve_player_direction(
+        current_direction=(1, 0),
+        desired_direction=(0, 1),
+        center_x=60.0,
+        center_y=59.0,
+        cell_size=20.0,
+        offset_x=10.0,
+        offset_y=10.0,
+    )
+    assert direction == (0, 1)
+    assert center_x == 60.0
+    assert center_y == 60.0
+
+
+def test_wall_colliders_create_vertical_barrier() -> None:
+    """An east wall should produce a tall, narrow collision box."""
+    colliders = MazeDisplay([[CLOSED_EAST]]).wall_colliders(200, 200)
+
+    assert len(colliders) == 1
+    _, _, width, height = colliders[0]
+    assert width > 0
+    assert height > 0
+    assert height > width
+
+
+def test_wall_colliders_create_horizontal_barrier() -> None:
+    """A north wall should produce a wide, short collision box."""
+    colliders = MazeDisplay([[CLOSED_NORTH]]).wall_colliders(200, 200)
+
+    assert len(colliders) == 1
+    _, _, width, height = colliders[0]
+    assert width > 0
+    assert height > 0
+    assert width > height

@@ -15,6 +15,7 @@ from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
 
 
 USAGE = "Usage: python3 pac-man.py config.json"
+MAZE_SIZE = (21, 21)
 
 
 def _print_error(message: str) -> None:
@@ -44,8 +45,8 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Configured lives: {config.lives}")
     print(f"Loaded highscores: {len(highscores)}")
 
-    # Create a simple 20x20 maze
-    maze_gen = MazeGenerator(size=(20, 20))
+    # Use an odd-sized maze so the layout has a true center cell.
+    maze_gen = MazeGenerator(size=MAZE_SIZE)
 
     # Get the maze structure
     maze_grid = maze_gen.maze

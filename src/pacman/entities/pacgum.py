@@ -6,7 +6,7 @@ from pathlib import Path
 
 from pacman.entities.entity import Entity
 
-ASSETS_DIR = Path(__file__).resolve().parent.parent / "assets" / "sprites"
+ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets" / "sprites"
 ITEM_SHEET_PATH = ASSETS_DIR / "pacgum.png"
 
 
