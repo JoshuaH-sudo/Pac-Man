@@ -131,7 +131,8 @@ class MazeDisplay:
                 colliders.append(
                     (
                         offset_x + start_x * cell_size,
-                        window_height - (offset_y + ((start_y + end_y) * cell_size / 2.0)),
+                        window_height
+                        - (offset_y + ((start_y + end_y) * cell_size / 2.0)),
                         thickness,
                         abs(end_y - start_y) * cell_size + thickness,
                     )
