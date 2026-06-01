@@ -8,7 +8,7 @@ from typing import Sequence
 import arcade
 from arcade.types import Color
 
-from pacman.entities import Item, Player
+from pacman.entities import Pacgum, Pacman
 
 WINDOW_WIDTH = 1024
 WINDOW_HEIGHT = 768
@@ -186,7 +186,7 @@ class GameView(arcade.View):
         )
         self._item_cell_y = max(0, int(self._player_cell_y) - 2)
 
-        self._player = Player(
+        self._player = Pacman(
             center_x=0.0,
             center_y=0.0,
             speed=PLAYER_MOVEMENT_SPEED,
@@ -197,7 +197,7 @@ class GameView(arcade.View):
 
         self._items: arcade.SpriteList = arcade.SpriteList()
         self._items.append(
-            Item(
+            Pacgum(
                 center_x=0.0,
                 center_y=0.0,
                 scale=1.0,
