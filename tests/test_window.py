@@ -7,6 +7,7 @@ from pacman.constants import (
     CLOSED_WEST,
 )
 from pacman.game_view import MazeDisplay
+from pacman.movement import MovementController
 from pacman.utils import (
     center_cell_index,
     choose_initial_direction,
@@ -116,6 +117,35 @@ def test_resolve_player_direction_resumes_from_stop() -> None:
     assert direction == (-1, 0)
     assert center_x == 60.0
     assert center_y == 60.0
+
+
+def test_movement_controller_centers_on_blocked_stop() -> None:
+    """Stopping at a dead-end should snap Pac-Man to the cell center."""
+    controller = MovementController(initial_direction=(0, 1))
+
+    direction, center_x, center_y, _ = controller.apply(
+        player_center_x=103.2,
+        player_center_y=146.7,
+        cell_size=20.0,
+        offset_x=10.0,
+        offset_y=10.0,
+        cell_value=0,
+    )
+    assert direction == (0, 0)
+    assert center_x == 103.2
+    assert center_y == 146.7
+
+    direction, center_x, center_y, _ = controller.apply(
+        player_center_x=103.2,
+        player_center_y=146.7,
+        cell_size=20.0,
+        offset_x=10.0,
+        offset_y=10.0,
+        cell_value=CLOSED_NORTH,
+    )
+    assert direction == (0, 0)
+    assert center_x == 100.0
+    assert center_y == 140.0
 
 
 def test_wall_colliders_create_vertical_barrier() -> None:

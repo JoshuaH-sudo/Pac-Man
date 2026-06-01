@@ -84,11 +84,17 @@ class MovementController:
                 self._desired_direction = self._queued_direction
                 self._queued_direction = (0, 0)
 
+        previous_direction = self._current_direction
         self._current_direction, self._desired_direction = coerce_blocked_directions(
             self._current_direction,
             self._desired_direction,
             cell_value,
         )
+
+        if previous_direction != (0, 0) and self._current_direction == (0, 0):
+            center_x = nearest_cell_center(player_center_x, offset_x, cell_size)
+            center_y = nearest_cell_center(player_center_y, offset_y, cell_size)
+            return self._current_direction, center_x, center_y, False
 
         self._current_direction, center_x, center_y = resolve_player_direction(
             self._current_direction,
