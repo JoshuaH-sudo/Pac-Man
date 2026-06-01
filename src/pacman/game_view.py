@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import logging
 import os
+import random
 from typing import Sequence
 
 import arcade
@@ -16,6 +17,8 @@ from pacman.constants import (
     CLOSED_SOUTH,
     CLOSED_WEST,
     COLLISION_WALL_THICKNESS_RATIO,
+    GHOST_CELL_FRACTION,
+    GHOST_SPEED_RATIO,
     ITEM_CELL_FRACTION,
     MAZE_MARGIN,
     MAX_COLLISION_WALL_THICKNESS,
@@ -24,19 +27,32 @@ from pacman.constants import (
     PLAYER_MOVEMENT_SPEED,
     PLAYER_SPEED_RATIO,
 )
-from pacman.entities import Pacgum, Pacman
+from pacman.entities import Ghost, Pacgum, Pacman
 from pacman.movement import MovementController
 from pacman.types import GridPoint, WallCollider, WallSegment
 from pacman.utils import (
     center_cell_index,
     choose_initial_direction,
     direction_is_open,
+    nearest_cell_center,
     nearest_cell_index,
     normalize_segment,
 )
 
 LOGGER = logging.getLogger(__name__)
 FULLY_CLOSED_CELL_MASK = CLOSED_NORTH | CLOSED_EAST | CLOSED_SOUTH | CLOSED_WEST
+CARDINAL_DIRECTIONS: tuple[tuple[int, int], ...] = (
+    (0, 1),
+    (1, 0),
+    (0, -1),
+    (-1, 0),
+)
+GHOST_SPRITE_SHEETS: tuple[str, ...] = (
+    "Blinky.png",
+    "Pinky.png",
+    "Inky.png",
+    "Clyde.png",
+)
 
 
 def _is_corner_cell(cell_x: int, cell_y: int, cols: int, rows: int) -> bool:
@@ -58,6 +74,18 @@ def _build_item_cells(
         for cell_x, cell_value in enumerate(row)
         if not _is_corner_cell(cell_x, cell_y, cols, rows)
         and (int(cell_value) & FULLY_CLOSED_CELL_MASK) != FULLY_CLOSED_CELL_MASK
+    )
+
+
+def _build_corner_cells(cols: int, rows: int) -> tuple[tuple[float, float], ...]:
+    """Return the four maze corners in deterministic order."""
+    max_cell_x = float(cols - 1)
+    max_cell_y = float(rows - 1)
+    return (
+        (0.0, 0.0),
+        (max_cell_x, 0.0),
+        (0.0, max_cell_y),
+        (max_cell_x, max_cell_y),
     )
 
 
@@ -255,6 +283,10 @@ class GameView(arcade.View):
         self._player_cell_x = center_cell_index(self._maze_display.cols)
         self._player_cell_y = center_cell_index(self._maze_display.rows)
         self._item_cells = _build_item_cells(self._maze_grid)
+        self._ghost_cells = _build_corner_cells(
+            self._maze_display.cols,
+            self._maze_display.rows,
+        )
 
         center_cell_value = int(maze_grid[self._player_cell_y][self._player_cell_x])
 
@@ -280,6 +312,21 @@ class GameView(arcade.View):
                 )
             )
 
+        self._ghosts: arcade.SpriteList = arcade.SpriteList()
+        for ghost_sheet in GHOST_SPRITE_SHEETS:
+            self._ghosts.append(
+                Ghost(
+                    sprite_sheet_name=ghost_sheet,
+                    center_x=0.0,
+                    center_y=0.0,
+                    speed=PLAYER_MOVEMENT_SPEED,
+                    scale=1.0,
+                )
+            )
+        self._ghost_directions: list[tuple[int, int]] = [
+            (0, 0) for _ in self._ghost_cells
+        ]
+
         self._movement = MovementController(choose_initial_direction(center_cell_value))
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
         if self._debug_enabled:
@@ -302,6 +349,7 @@ class GameView(arcade.View):
         self._maze_display.draw(self.window.width, self.window.height)
         self._items.draw()
         self._players.draw()
+        self._ghosts.draw()
 
     def on_update(self, delta_time: float) -> None:
         if self.window is None:
@@ -332,6 +380,10 @@ class GameView(arcade.View):
             self._players.update()
         else:
             self._physics_engine.update()
+
+        self._update_ghosts()
+        self._ghosts.update()
+        self._snap_ghosts_to_lane(cell_size, offset_x, offset_y)
 
         self._player.center_x, self._player.center_y = self._movement.snap_to_lane(
             self._player.center_x,
@@ -441,6 +493,123 @@ class GameView(arcade.View):
                 cell_x,
                 cell_y,
             )
+
+        for index, (ghost, (cell_x, cell_y)) in enumerate(
+            zip(self._ghosts, self._ghost_cells)
+        ):
+            ghost.scale = (cell_size * GHOST_CELL_FRACTION) / max(
+                1.0, float(ghost.texture.width)
+            )
+            ghost.set_speed(cell_size * GHOST_SPEED_RATIO)
+            ghost.center_x, ghost.center_y = self._maze_display.cell_center(
+                self.window.width,
+                self.window.height,
+                cell_x,
+                cell_y,
+            )
+            cell_value = int(self._maze_grid[int(cell_y)][int(cell_x)])
+            self._ghost_directions[index] = choose_initial_direction(cell_value)
+
+    def _update_ghosts(self) -> None:
+        """Move ghosts with random, wall-aware decisions at cell centers."""
+        if self.window is None:
+            return
+
+        cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
+            self.window.width,
+            self.window.height,
+        )
+        # Keep center snapping tight so movement isn't canceled every frame.
+        alignment_tolerance = max(0.5, cell_size * 0.03)
+
+        for index, ghost in enumerate(self._ghosts):
+            cell_x = nearest_cell_index(ghost.center_x, offset_x, cell_size)
+            cell_y = nearest_cell_index(
+                self.window.height - ghost.center_y,
+                offset_y,
+                cell_size,
+            )
+            cell_x = max(0, min(self._maze_display.cols - 1, cell_x))
+            cell_y = max(0, min(self._maze_display.rows - 1, cell_y))
+            cell_value = int(self._maze_grid[cell_y][cell_x])
+
+            center_x, center_y = self._maze_display.cell_center(
+                self.window.width,
+                self.window.height,
+                float(cell_x),
+                float(cell_y),
+            )
+            aligned_to_center = (
+                abs(ghost.center_x - center_x) <= alignment_tolerance
+                and abs(ghost.center_y - center_y) <= alignment_tolerance
+            )
+
+            current_direction = self._ghost_directions[index]
+            open_directions = [
+                direction
+                for direction in CARDINAL_DIRECTIONS
+                if direction_is_open(cell_value, direction)
+            ]
+            if not open_directions:
+                self._ghost_directions[index] = (0, 0)
+                ghost.move(0, 0)
+                continue
+
+            if aligned_to_center:
+                ghost.center_x = center_x
+                ghost.center_y = center_y
+                reverse_direction = (-current_direction[0], -current_direction[1])
+                non_reverse_directions = [
+                    direction
+                    for direction in open_directions
+                    if direction != reverse_direction
+                ]
+                candidate_directions = (
+                    non_reverse_directions
+                    if non_reverse_directions
+                    else open_directions
+                )
+                current_still_valid = [
+                    direction
+                    for direction in candidate_directions
+                    if direction == current_direction
+                ]
+                if current_still_valid and random.random() < 0.65:
+                    next_direction = current_direction
+                else:
+                    next_direction = random.choice(candidate_directions)
+                self._ghost_directions[index] = next_direction
+                ghost.move(next_direction[0], next_direction[1])
+                continue
+
+            if current_direction in open_directions:
+                ghost.move(current_direction[0], current_direction[1])
+                continue
+
+            next_direction = random.choice(open_directions)
+            self._ghost_directions[index] = next_direction
+            ghost.move(next_direction[0], next_direction[1])
+
+    def _snap_ghosts_to_lane(
+        self,
+        cell_size: float,
+        offset_x: float,
+        offset_y: float,
+    ) -> None:
+        """Keep ghosts centered on their travel lane like Pac-Man."""
+        for ghost, direction in zip(self._ghosts, self._ghost_directions):
+            if direction[0] != 0:
+                ghost.center_y = nearest_cell_center(
+                    ghost.center_y,
+                    offset_y,
+                    cell_size,
+                )
+            elif direction[1] != 0:
+                ghost.center_x = nearest_cell_center(
+                    ghost.center_x,
+                    offset_x,
+                    cell_size,
+                )
 
     def _current_cell_value(self) -> int:
         """Return wall flags for the maze cell currently containing the player."""

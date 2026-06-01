@@ -6,7 +6,7 @@ from pacman.constants import (
     CLOSED_SOUTH,
     CLOSED_WEST,
 )
-from pacman.game_view import MazeDisplay, _build_item_cells
+from pacman.game_view import MazeDisplay, _build_corner_cells, _build_item_cells
 from pacman.movement import MovementController
 from pacman.utils import (
     center_cell_index,
@@ -182,3 +182,13 @@ def test_game_view_pacgums_skip_corners_and_fully_closed_cells() -> None:
     item_cells = _build_item_cells(maze_grid)
 
     assert len(item_cells) == 4
+
+
+def test_build_corner_cells_returns_all_four_corners() -> None:
+    """Ghost spawn helper should include each maze corner exactly once."""
+    assert _build_corner_cells(cols=4, rows=3) == (
+        (0.0, 0.0),
+        (3.0, 0.0),
+        (0.0, 2.0),
+        (3.0, 2.0),
+    )

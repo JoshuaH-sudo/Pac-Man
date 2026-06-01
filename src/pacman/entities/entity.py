@@ -1,4 +1,4 @@
-"""Shared Arcade sprite base entity for 2x2 sheet-based game actors."""
+"""Shared Arcade sprite base entity for sheet-based game actors."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ import arcade
 
 
 class Entity(arcade.Sprite):
-    """Base sprite entity that handles 2x2 spritesheet texture management."""
+    """Base sprite entity that handles spritesheet texture management."""
 
     def __init__(
         self,
@@ -16,8 +16,14 @@ class Entity(arcade.Sprite):
         center_x: float,
         center_y: float,
         scale: float = 1.0,
+        rows: int = 2,
+        columns: int = 2,
     ) -> None:
-        textures = self._load_textures(sprite_sheet_path)
+        textures = self._load_textures(
+            sprite_sheet_path,
+            rows=rows,
+            columns=columns,
+        )
         super().__init__(
             textures[0],
             scale=scale,
@@ -32,6 +38,9 @@ class Entity(arcade.Sprite):
         sheet_path: Path, rows: int = 2, columns: int = 2
     ) -> list[arcade.Texture]:
         """Load textures from a sprite sheet."""
+        if rows <= 0 or columns <= 0:
+            raise ValueError("rows and columns must be positive integers")
+
         sprite_sheet = arcade.load_spritesheet(sheet_path)
         frame_size = (
             sprite_sheet.image.width // columns,
