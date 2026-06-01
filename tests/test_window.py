@@ -102,6 +102,22 @@ def test_resolve_player_direction_turns_when_aligned() -> None:
     assert center_y == 60.0
 
 
+def test_resolve_player_direction_resumes_from_stop() -> None:
+    """A stopped player should follow a valid desired direction immediately."""
+    direction, center_x, center_y = resolve_player_direction(
+        current_direction=(0, 0),
+        desired_direction=(-1, 0),
+        center_x=60.0,
+        center_y=60.0,
+        cell_size=20.0,
+        offset_x=10.0,
+        offset_y=10.0,
+    )
+    assert direction == (-1, 0)
+    assert center_x == 60.0
+    assert center_y == 60.0
+
+
 def test_wall_colliders_create_vertical_barrier() -> None:
     """An east wall should produce a tall, narrow collision box."""
     colliders = MazeDisplay([[CLOSED_EAST]]).wall_colliders(200, 200)

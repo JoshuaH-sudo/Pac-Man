@@ -77,7 +77,11 @@ def resolve_player_direction(
 ) -> tuple[Direction, float, float]:
     """Keep travel axis-aligned and snap turns onto the cell grid."""
     alignment_tolerance = max(1.0, cell_size * 0.25)
-    next_direction = current_direction or desired_direction
+    next_direction = (
+        current_direction
+        if current_direction != (0, 0)
+        else desired_direction
+    )
     snapped_x = center_x
     snapped_y = center_y
 

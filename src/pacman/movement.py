@@ -27,6 +27,15 @@ class MovementController:
         """Current active movement direction."""
         return self._current_direction
 
+    def debug_state(self) -> tuple[Direction, Direction, Direction, bool]:
+        """Return internal movement state for instrumentation/debug logs."""
+        return (
+            self._current_direction,
+            self._desired_direction,
+            self._queued_direction,
+            self._lock_movement_for_spawn,
+        )
+
     def reset(self, initial_direction: Direction) -> None:
         """Reset movement state after spawn sync/resizing."""
         self._current_direction = initial_direction

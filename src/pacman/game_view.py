@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
+import os
 from typing import Sequence
 
 import arcade
@@ -28,9 +30,23 @@ from pacman.types import GridPoint, WallCollider, WallSegment
 from pacman.utils import (
     center_cell_index,
     choose_initial_direction,
+    direction_is_open,
     nearest_cell_index,
     normalize_segment,
 )
+
+LOGGER = logging.getLogger(__name__)
+
+
+def _env_flag_is_enabled(name: str) -> bool:
+    """Return True when the environment flag is set to a truthy value."""
+    return os.getenv(name, "").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "on",
+        "debug",
+    }
 
 
 @dataclass(frozen=True)
@@ -259,6 +275,13 @@ class GameView(arcade.View):
         self._movement = MovementController(
             choose_initial_direction(center_cell_value)
         )
+        self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
+        if self._debug_enabled:
+            logging.basicConfig(
+                level=logging.DEBUG,
+                format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+            )
+            LOGGER.debug("PACMAN_DEBUG enabled for movement tracing")
 
     def on_show_view(self) -> None:
         arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
@@ -278,6 +301,11 @@ class GameView(arcade.View):
         if self.window is None:
             return
 
+        prev_x = self._player.center_x
+        prev_y = self._player.center_y
+        cell_x, cell_y = self._current_cell_indices()
+        cell_value = int(self._maze_grid[cell_y][cell_x])
+
         cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
             self.window.width,
             self.window.height,
@@ -288,7 +316,7 @@ class GameView(arcade.View):
             cell_size,
             offset_x,
             offset_y,
-            self._current_cell_value(),
+            cell_value,
         )
         self._player.center_x = center_x
         self._player.center_y = center_y
@@ -306,6 +334,33 @@ class GameView(arcade.View):
             offset_x,
             offset_y,
         )
+        if self._debug_enabled:
+            current_direction, desired_direction, queued_direction, spawn_lock = (
+                self._movement.debug_state()
+            )
+            LOGGER.debug(
+                "player_update cell=(%d,%d) pos=(%.2f,%.2f)->(%.2f,%.2f) "
+                "delta=(%.2f,%.2f) speed=(%.2f,%.2f) current=%s desired=%s queued=%s "
+                "spawn_lock=%s open={up:%s,right:%s,down:%s,left:%s}",
+                cell_x,
+                cell_y,
+                prev_x,
+                prev_y,
+                self._player.center_x,
+                self._player.center_y,
+                self._player.center_x - prev_x,
+                self._player.center_y - prev_y,
+                self._player.change_x,
+                self._player.change_y,
+                current_direction,
+                desired_direction,
+                queued_direction,
+                spawn_lock,
+                direction_is_open(cell_value, (0, 1)),
+                direction_is_open(cell_value, (1, 0)),
+                direction_is_open(cell_value, (0, -1)),
+                direction_is_open(cell_value, (-1, 0)),
+            )
         self._players.update_animation(delta_time=delta_time)
         self._items.update_animation(delta_time=delta_time)
         self._keep_player_on_screen()
@@ -385,8 +440,13 @@ class GameView(arcade.View):
 
     def _current_cell_value(self) -> int:
         """Return wall flags for the maze cell currently containing the player."""
+        cell_x, cell_y = self._current_cell_indices()
+        return int(self._maze_grid[cell_y][cell_x])
+
+    def _current_cell_indices(self) -> tuple[int, int]:
+        """Return the nearest maze cell indices for the current player position."""
         if self.window is None:
-            return int(self._maze_grid[self._player_cell_y][self._player_cell_x])
+            return self._player_cell_x, self._player_cell_y
 
         cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
             self.window.width,
@@ -400,7 +460,7 @@ class GameView(arcade.View):
         )
         cell_x = max(0, min(self._maze_display.cols - 1, cell_x))
         cell_y = max(0, min(self._maze_display.rows - 1, cell_y))
-        return int(self._maze_grid[cell_y][cell_x])
+        return cell_x, cell_y
 
     def _rebuild_wall_colliders(self) -> None:
         """Recreate collision sprites so walls match the current maze layout."""
