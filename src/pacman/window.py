@@ -132,8 +132,17 @@ def _nearest_cell_center(
     cell_size: float,
 ) -> float:
     """Return the nearest maze cell center coordinate for a screen axis."""
-    cell_index = round((coordinate - offset) / cell_size - 0.5)
+    cell_index = _nearest_cell_index(coordinate, offset, cell_size)
     return offset + (cell_index + 0.5) * cell_size
+
+
+def _nearest_cell_index(
+    coordinate: float,
+    offset: float,
+    cell_size: float,
+) -> int:
+    """Return the nearest maze cell index for a screen axis."""
+    return int(round((coordinate - offset) / cell_size - 0.5))
 
 
 def _resolve_player_direction(
@@ -176,6 +185,26 @@ def _resolve_player_direction(
                 next_direction = desired_direction
 
     return next_direction, snapped_x, snapped_y
+
+
+def _coerce_blocked_directions(
+    current_direction: Direction,
+    desired_direction: Direction,
+    cell_value: int,
+) -> tuple[Direction, Direction]:
+    """Stop movement when blocked and keep only immediately valid directions."""
+    next_current = current_direction
+    next_desired = desired_direction
+
+    if next_current != (0, 0) and not _direction_is_open(cell_value, next_current):
+        next_current = (0, 0)
+        next_desired = (0, 0)
+
+    if next_current == (0, 0) and next_desired != (0, 0):
+        if not _direction_is_open(cell_value, next_desired):
+            next_desired = (0, 0)
+
+    return next_current, next_desired
 
 
 class MazeDisplay:
@@ -347,6 +376,8 @@ class GameView(arcade.View):
 
         self._current_direction = _choose_initial_direction(center_cell_value)
         self._desired_direction = self._current_direction
+        self._queued_direction: Direction = (0, 0)
+        self._lock_movement_for_spawn = True
 
     def on_show_view(self) -> None:
         arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
@@ -363,7 +394,11 @@ class GameView(arcade.View):
         self._players.draw()
 
     def on_update(self, delta_time: float) -> None:
-        self._apply_player_movement()
+        if self._lock_movement_for_spawn:
+            self._player.move(horizontal=0, vertical=0)
+            self._lock_movement_for_spawn = False
+        else:
+            self._apply_player_movement()
         if self._physics_engine is None:
             self._players.update()
         else:
@@ -385,12 +420,18 @@ class GameView(arcade.View):
         if symbol in (arcade.key.DOWN, arcade.key.S):
             next_direction = (0, -1)
 
-        if next_direction is None or self.window is None:
+        if next_direction is None:
+            return
+
+        self._queued_direction = next_direction
+
+        if self.window is None:
             return
 
         cell_value = self._current_cell_value()
-        if _direction_is_open(cell_value, next_direction):
-            self._desired_direction = next_direction
+        if _direction_is_open(cell_value, self._queued_direction):
+            self._desired_direction = self._queued_direction
+            self._queued_direction = (0, 0)
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
@@ -399,6 +440,19 @@ class GameView(arcade.View):
     def _apply_player_movement(self) -> None:
         if self.window is None:
             return
+
+        cell_value = self._current_cell_value()
+
+        if self._queued_direction != (0, 0):
+            if _direction_is_open(cell_value, self._queued_direction):
+                self._desired_direction = self._queued_direction
+                self._queued_direction = (0, 0)
+
+        self._current_direction, self._desired_direction = _coerce_blocked_directions(
+            self._current_direction,
+            self._desired_direction,
+            cell_value,
+        )
 
         cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
             self.window.width,
@@ -439,6 +493,15 @@ class GameView(arcade.View):
         if self.window is None:
             return
 
+        self._player_cell_x = max(
+            0,
+            min(self._maze_display.cols - 1, int(round(self._player_cell_x))),
+        )
+        self._player_cell_y = max(
+            0,
+            min(self._maze_display.rows - 1, int(round(self._player_cell_y))),
+        )
+
         cell_size, _, _ = self._maze_display.layout_for_window(
             self.window.width,
             self.window.height,
@@ -461,6 +524,8 @@ class GameView(arcade.View):
         )
         self._current_direction = _choose_initial_direction(center_cell_value)
         self._desired_direction = self._current_direction
+        self._queued_direction = (0, 0)
+        self._lock_movement_for_spawn = True
 
         for item in self._items:
             item.scale = (
@@ -505,8 +570,12 @@ class GameView(arcade.View):
             self.window.width,
             self.window.height,
         )
-        cell_x = int((self._player.center_x - offset_x) / cell_size)
-        cell_y = int(((self.window.height - self._player.center_y) - offset_y) / cell_size)
+        cell_x = _nearest_cell_index(self._player.center_x, offset_x, cell_size)
+        cell_y = _nearest_cell_index(
+            self.window.height - self._player.center_y,
+            offset_y,
+            cell_size,
+        )
         cell_x = max(0, min(self._maze_display.cols - 1, cell_x))
         cell_y = max(0, min(self._maze_display.rows - 1, cell_y))
         return int(self._maze_grid[cell_y][cell_x])
