@@ -11,7 +11,7 @@ from pacman.config import load_config
 from pacman.highscore import load_highscores
 from mazegenerator import MazeGenerator
 
-from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
+from pacman.window import create_game_window
 
 
 USAGE = "Usage: python3 pac-man.py config.json"
@@ -59,14 +59,7 @@ def main(argv: list[str] | None = None) -> int:
         print("".join(f"{cell:2X}" for cell in row))
     print(f"Shortest path length: {shortest_path}")
 
-    # Create a window class. This is what actually shows up on screen
-    window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
-
-    # Create and setup the GameView
-    game = GameView(maze_grid)
-
-    # Show GameView on screen
-    window.show_view(game)
+    create_game_window(maze_grid)
 
     # Start the arcade game loop
     arcade.run()
