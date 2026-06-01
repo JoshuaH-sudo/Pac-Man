@@ -36,6 +36,29 @@ from pacman.utils import (
 )
 
 LOGGER = logging.getLogger(__name__)
+FULLY_CLOSED_CELL_MASK = CLOSED_NORTH | CLOSED_EAST | CLOSED_SOUTH | CLOSED_WEST
+
+
+def _is_corner_cell(cell_x: int, cell_y: int, cols: int, rows: int) -> bool:
+    """Return True when a cell is one of the four maze corners."""
+    max_cell_x = cols - 1
+    max_cell_y = rows - 1
+    return (cell_x in (0, max_cell_x)) and (cell_y in (0, max_cell_y))
+
+
+def _build_item_cells(
+    maze_grid: Sequence[Sequence[int]],
+) -> tuple[tuple[float, float], ...]:
+    """Return Pacgum cells excluding maze corners and fully closed cells."""
+    rows = len(maze_grid)
+    cols = len(maze_grid[0])
+    return tuple(
+        (float(cell_x), float(cell_y))
+        for cell_y, row in enumerate(maze_grid)
+        for cell_x, cell_value in enumerate(row)
+        if not _is_corner_cell(cell_x, cell_y, cols, rows)
+        and (int(cell_value) & FULLY_CLOSED_CELL_MASK) != FULLY_CLOSED_CELL_MASK
+    )
 
 
 def _env_flag_is_enabled(name: str) -> bool:
@@ -65,20 +88,14 @@ class MazePointGrid:
     ) -> "MazePointGrid":
         """Parse maze cell bitmasks into corner points and wall segments."""
         if not maze_grid or not maze_grid[0]:
-            raise ValueError(
-                "maze_grid must be a non-empty rectangular matrix"
-            )
+            raise ValueError("maze_grid must be a non-empty rectangular matrix")
 
         rows = len(maze_grid)
         cols = len(maze_grid[0])
         if any(len(row) != cols for row in maze_grid):
             raise ValueError("maze_grid rows must have equal length")
 
-        points = tuple(
-            (x, y)
-            for y in range(rows + 1)
-            for x in range(cols + 1)
-        )
+        points = tuple((x, y) for y in range(rows + 1) for x in range(cols + 1))
         wall_segments: set[WallSegment] = set()
 
         for y, row in enumerate(maze_grid):
@@ -87,13 +104,9 @@ class MazePointGrid:
                 if cell_value & CLOSED_NORTH:
                     wall_segments.add(normalize_segment((x, y), (x + 1, y)))
                 if cell_value & CLOSED_EAST:
-                    wall_segments.add(
-                        normalize_segment((x + 1, y), (x + 1, y + 1))
-                    )
+                    wall_segments.add(normalize_segment((x + 1, y), (x + 1, y + 1)))
                 if cell_value & CLOSED_SOUTH:
-                    wall_segments.add(
-                        normalize_segment((x, y + 1), (x + 1, y + 1))
-                    )
+                    wall_segments.add(normalize_segment((x, y + 1), (x + 1, y + 1)))
                 if cell_value & CLOSED_WEST:
                     wall_segments.add(normalize_segment((x, y), (x, y + 1)))
 
@@ -241,15 +254,9 @@ class GameView(arcade.View):
         self._maze_display = MazeDisplay(maze_grid)
         self._player_cell_x = center_cell_index(self._maze_display.cols)
         self._player_cell_y = center_cell_index(self._maze_display.rows)
-        self._item_cell_x = min(
-            self._maze_display.cols - 1,
-            self._player_cell_x + 2,
-        )
-        self._item_cell_y = max(0, self._player_cell_y - 2)
+        self._item_cells = _build_item_cells(self._maze_grid)
 
-        center_cell_value = int(
-            maze_grid[self._player_cell_y][self._player_cell_x]
-        )
+        center_cell_value = int(maze_grid[self._player_cell_y][self._player_cell_x])
 
         self._player = Pacman(
             center_x=0.0,
@@ -263,18 +270,17 @@ class GameView(arcade.View):
         self._physics_engine: arcade.PhysicsEngineSimple | None = None
 
         self._items: arcade.SpriteList = arcade.SpriteList()
-        self._items.append(
-            Pacgum(
-                center_x=0.0,
-                center_y=0.0,
-                scale=1.0,
-                animation_fps=PACGUM_ANIMATION_FPS,
+        for _ in self._item_cells:
+            self._items.append(
+                Pacgum(
+                    center_x=0.0,
+                    center_y=0.0,
+                    scale=1.0,
+                    animation_fps=PACGUM_ANIMATION_FPS,
+                )
             )
-        )
 
-        self._movement = MovementController(
-            choose_initial_direction(center_cell_value)
-        )
+        self._movement = MovementController(choose_initial_direction(center_cell_value))
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
         if self._debug_enabled:
             logging.basicConfig(
@@ -409,9 +415,8 @@ class GameView(arcade.View):
             self.window.height,
         )
 
-        self._player.scale = (
-            (cell_size * PLAYER_CELL_FRACTION)
-            / max(1.0, float(self._player.texture.width))
+        self._player.scale = (cell_size * PLAYER_CELL_FRACTION) / max(
+            1.0, float(self._player.texture.width)
         )
         self._player.set_speed(cell_size * PLAYER_SPEED_RATIO)
         self._player.center_x, self._player.center_y = self._maze_display.cell_center(
@@ -426,16 +431,15 @@ class GameView(arcade.View):
         )
         self._movement.reset(choose_initial_direction(center_cell_value))
 
-        for item in self._items:
-            item.scale = (
-                (cell_size * ITEM_CELL_FRACTION)
-                / max(1.0, float(item.texture.width))
+        for item, (cell_x, cell_y) in zip(self._items, self._item_cells):
+            item.scale = (cell_size * ITEM_CELL_FRACTION) / max(
+                1.0, float(item.texture.width)
             )
             item.center_x, item.center_y = self._maze_display.cell_center(
                 self.window.width,
                 self.window.height,
-                self._item_cell_x,
-                self._item_cell_y,
+                cell_x,
+                cell_y,
             )
 
     def _current_cell_value(self) -> int:

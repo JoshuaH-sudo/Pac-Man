@@ -6,7 +6,7 @@ from pacman.constants import (
     CLOSED_SOUTH,
     CLOSED_WEST,
 )
-from pacman.game_view import MazeDisplay
+from pacman.game_view import MazeDisplay, _build_item_cells
 from pacman.movement import MovementController
 from pacman.utils import (
     center_cell_index,
@@ -168,3 +168,17 @@ def test_wall_colliders_create_horizontal_barrier() -> None:
     assert width > 0
     assert height > 0
     assert width > height
+
+
+def test_game_view_pacgums_skip_corners_and_fully_closed_cells() -> None:
+    """Pacgums should fill non-corner cells except fully closed dead cells."""
+    fully_closed = CLOSED_NORTH | CLOSED_EAST | CLOSED_SOUTH | CLOSED_WEST
+    maze_grid = [
+        [0, 0, 0],
+        [0, fully_closed, 0],
+        [0, 0, 0],
+    ]
+
+    item_cells = _build_item_cells(maze_grid)
+
+    assert len(item_cells) == 4
