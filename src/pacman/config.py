@@ -2,106 +2,205 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 import json
 from pathlib import Path
+from pydantic import BaseModel, Field, model_validator, ValidationError
+import sys
 from typing import Any
 
 
-@dataclass(slots=True)
-class GameConfig:
+_DEFAULT_LEVEL_WIDTH = 21
+_DEFAULT_LEVEL_HEIGHT = 21
+
+
+class GameConfig(BaseModel):
     """Runtime configuration values with safe defaults."""
 
-    highscore_filename: str = "highscores.json"
-    levels: int = 10
-    width: int = 21
-    height: int = 21
-    lives: int = 3
-    pacgum: int = 42
-    points_per_pacgum: int = 10
-    points_per_super_pacgum: int = 50
-    points_per_ghost: int = 200
-    seed: int = 42
-    level_max_time: int = 90
+    highscore_filename: str = Field(default="highscores.json", min_length=6)
+    levels: list[tuple[int, int]] = Field(
+        default=[(_DEFAULT_LEVEL_WIDTH, _DEFAULT_LEVEL_HEIGHT)] * 10)
+    lives: int = Field(default=3, gt=0)
+    pacgum: int = Field(default=42, ge=0)
+    points_per_pacgum: int = Field(default=10, ge=0)
+    points_per_super_pacgum: int = Field(default=50, ge=0)
+    points_per_ghost: int = Field(default=200, ge=0)
+    seed: int | float | str = Field(default=42)
+    level_max_time: int = Field(default=90, gt=0)
+
+    @model_validator(mode="after")
+    def post_validate(self) -> "GameConfig":
+        if not self.highscore_filename.endswith(".json"):
+            raise ValueError("Highscore file has to be a JSON file.")
+
+        for i, (x, y) in enumerate(self.levels):
+            if x < 1:
+                raise ValueError(f"Invalid maze width for level {i + 1}. "
+                                 "Maze width needs to be a positive integer.")
+            if y < 1:
+                raise ValueError(f"Invalid maze height for level {i + 1}. "
+                                 "Maze width needs to be a positive integer.")
+
+        if len(self.levels) < 10:
+            raise ValueError("There must be at least 10 levels.")
+
+        return self
 
 
 _DEFAULT_CONFIG = GameConfig()
 _INT_FIELDS = {
-    "levels",
-    "width",
-    "height",
     "lives",
     "pacgum",
     "points_per_pacgum",
     "points_per_super_pacgum",
     "points_per_ghost",
-    "seed",
     "level_max_time",
 }
 
 
-def _strip_json_comments(content: str) -> str:
-    """Return JSON-compatible content by skipping full-line comments."""
-    kept_lines: list[str] = []
-    for line in content.splitlines():
-        stripped = line.lstrip()
-        if stripped.startswith("#") or stripped.startswith("//"):
-            continue
-        kept_lines.append(line)
-    return "\n".join(kept_lines)
+class Parser:
+    """Parse the config.json file and store in GameConfig."""
+    def __init__(self, config_file: str | Path) -> None:
+        self.config_path = Path(config_file)
 
+    def load_config(self) -> GameConfig:
+        """Load config from path while tolerating invalid values and comments."""
+        if not self.config_path.exists() or self.config_path.suffix.lower() != ".json":
+            Parser._print_config_error(f"ConfigError: {self.config_path} "
+                                       "is not a valid config file."
+                                       "Using the default configuration instead.")
+            return GameConfig()
 
-def _coerce_non_negative_int(value: Any, default: int) -> int:
-    """Convert value into a non-negative integer fallbacking to default."""
-    if isinstance(value, bool):
+        try:
+            content = self.config_path.read_text(encoding="utf-8")
+            parsed = json.loads(self._strip_json_comments(content))
+        except (OSError, json.JSONDecodeError):
+            Parser._print_config_error(f"ConfigError: {self.config_path} "
+                                       "is not a valid config file."
+                                       "Using the default configuration instead.")
+            return GameConfig()
+
+        if not isinstance(parsed, dict):
+            Parser._print_config_error(f"ConfigError: {self.config_path} "
+                                       "is not a valid config file."
+                                       "Using the default configuration instead.")
+            return GameConfig()
+
+        merged: dict[str, Any] = {
+            "highscore_filename": _DEFAULT_CONFIG.highscore_filename,
+            "levels": _DEFAULT_CONFIG.levels,
+            "lives": _DEFAULT_CONFIG.lives,
+            "pacgum": _DEFAULT_CONFIG.pacgum,
+            "points_per_pacgum": _DEFAULT_CONFIG.points_per_pacgum,
+            "points_per_super_pacgum": _DEFAULT_CONFIG.points_per_super_pacgum,
+            "points_per_ghost": _DEFAULT_CONFIG.points_per_ghost,
+            "seed": _DEFAULT_CONFIG.seed,
+            "level_max_time": _DEFAULT_CONFIG.level_max_time,
+        }
+
+        for key, value in parsed.items():
+            key = key.lower()
+            if key in _INT_FIELDS:
+                merged[key] = self._coerce_non_negative_int(key, value, merged[key])
+            elif key == "highscore_filename":
+                merged[key] = self._coerce_non_empty_str(value, merged[key])
+            elif key == "levels":
+                merged[key] = self._coerce_levels(value, merged[key])
+            elif key == "seed":
+                merged[key] = self._coerce_seed(value, merged[key])
+
+        try:
+            return GameConfig(**merged)
+        except ValidationError as e:
+            print(e, file=sys.stderr)
+            print("Using default configuration instead.", file=sys.stderr)
+            return GameConfig()
+
+    @staticmethod
+    def _strip_json_comments(content: str) -> str:
+        """Return JSON-compatible content by skipping full-line comments."""
+        kept_lines: list[str] = []
+        for line in content.splitlines():
+            stripped = line.lstrip()
+            if stripped.startswith("#") or stripped.startswith("//"):
+                continue
+            kept_lines.append(line)
+        return "\n".join(kept_lines)
+
+    @staticmethod
+    def _coerce_non_negative_int(key: str, value: Any, default: int) -> int:
+        """Convert value into a non-negative integer fallbacking to default."""
+        if isinstance(value, bool):
+            Parser._print_config_error(f"Value of {key} is not an integer. "
+                                       "Using default value instead.")
+            return default
+
+        try:
+            v = int(value)
+        except (TypeError, ValueError):
+            Parser._print_config_error(f"Value of {key} is not an integer. "
+                                       "Using default value instead.")
+            return default
+
+        if key == "lives":
+            if v < 1:
+                return default
+        else:
+            if v < 0:
+                return default
+        return v
+
+    @staticmethod
+    def _coerce_non_empty_str(value: Any, default: str) -> str:
+        """Convert value into a non-empty stripped string fallbacking to default."""
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if cleaned and cleaned.endswith(".json"):
+                return cleaned
+        Parser._print_config_error("Highscore file is not a valid JSON filename. "
+                                   "Using the default file 'highscore.json' instead.")
         return default
-    if isinstance(value, int):
-        return max(0, value)
-    return default
 
+    @staticmethod
+    def _coerce_levels(value: Any, default: list[tuple[int, int]]) \
+            -> list[tuple[int, int]]:
+        """Convert value into a list of tuple of integers."""
+        if not isinstance(value, list):
+            return default
 
-def _coerce_non_empty_str(value: Any, default: str) -> str:
-    """Convert value into a non-empty stripped string fallbacking to default."""
-    if isinstance(value, str):
-        cleaned = value.strip()
-        if cleaned:
-            return cleaned
-    return default
+        default_level = (21, 21)
+        res: list[tuple[int, int]] = []
+        for i, level in enumerate(value):
+            if not isinstance(level, dict):
+                print(f"Level {i + 1} is not correctly defined. "
+                      "Using the default value instead.",
+                      file=sys.stderr)
+                res.append(default_level)
+                continue
+            x = Parser._coerce_non_negative_int("levels", level.get("width"),
+                                                _DEFAULT_LEVEL_WIDTH)
+            y = Parser._coerce_non_negative_int("levels", level.get("height"),
+                                                _DEFAULT_LEVEL_HEIGHT)
+            res.append((x, y))
 
+        length = len(res)
+        if length < 10:
+            Parser._print_config_error("There must be at least 10 levels. "
+                                       "Adding default levels until "
+                                       "there are 10 levels.")
+            missing = 10 - length
+            for i in range(missing):
+                res.append(default_level)
+        return res
 
-def load_config(path: str | Path) -> GameConfig:
-    """Load config from path while tolerating invalid values and comments."""
-    config_path = Path(path)
-    if not config_path.exists() or config_path.suffix.lower() != ".json":
-        return GameConfig()
+    @staticmethod
+    def _coerce_seed(value: Any, default: int) -> int | float | str:
+        if isinstance(value, int) or isinstance(value, float) or isinstance(value, str):
+            return value
+        Parser._print_config_error(f"{value} is not a valid seed value. "
+                                   "Using the default seed instead.")
+        return default
 
-    try:
-        content = config_path.read_text(encoding="utf-8")
-        parsed = json.loads(_strip_json_comments(content))
-    except (OSError, json.JSONDecodeError):
-        return GameConfig()
-
-    if not isinstance(parsed, dict):
-        return GameConfig()
-
-    merged: dict[str, Any] = {
-        "highscore_filename": _DEFAULT_CONFIG.highscore_filename,
-        "levels": _DEFAULT_CONFIG.levels,
-        "width": _DEFAULT_CONFIG.width,
-        "height": _DEFAULT_CONFIG.height,
-        "lives": _DEFAULT_CONFIG.lives,
-        "pacgum": _DEFAULT_CONFIG.pacgum,
-        "points_per_pacgum": _DEFAULT_CONFIG.points_per_pacgum,
-        "points_per_super_pacgum": _DEFAULT_CONFIG.points_per_super_pacgum,
-        "points_per_ghost": _DEFAULT_CONFIG.points_per_ghost,
-        "seed": _DEFAULT_CONFIG.seed,
-        "level_max_time": _DEFAULT_CONFIG.level_max_time,
-    }
-
-    for key, value in parsed.items():
-        if key in _INT_FIELDS:
-            merged[key] = _coerce_non_negative_int(value, merged[key])
-        elif key == "highscore_filename":
-            merged[key] = _coerce_non_empty_str(value, merged[key])
-
-    return GameConfig(**merged)
+    @staticmethod
+    def _print_config_error(error: str) -> None:
+        """Print an error message for an error when parsing the configuration file."""
+        print("ConfigError: ", error, file=sys.stderr)

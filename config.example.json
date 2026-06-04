@@ -1,14 +1,33 @@
-# Full-line comments are supported by the loader.
+# Pac-Man game configuration
+# Lines starting with # or // are comments and are ignored
+
 {
+  # File where highscores are stored
   "highscore_filename": "highscores.json",
-  "levels": 10,
-  "width": 21,
-  "height": 21,
+
+  # Starting lives
   "lives": 3,
-  "pacgum": 42,
+
+  # Scoring
   "points_per_pacgum": 10,
   "points_per_super_pacgum": 50,
   "points_per_ghost": 200,
+
+  # Level defaults
   "seed": 42,
-  "level_max_time": 90
+  "level_max_time": 90,
+
+  # Level definitions (at least 10 required)
+  "levels": [
+    { "width": 21, "height": 21 },
+    { "width": 21, "height": 21 },
+    { "width": 22, "height": 22 },
+    { "width": 23, "height": 23 },
+    { "width": 24, "height": 24 },
+    { "width": 25, "height": 25 },
+    { "width": 26, "height": 26 },
+    { "width": 27, "height": 27 },
+    { "width": 28, "height": 28 },
+    { "width": 29, "height": 29 }
+  ]
 }

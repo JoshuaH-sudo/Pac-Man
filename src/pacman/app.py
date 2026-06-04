@@ -7,7 +7,7 @@ import sys
 
 import arcade
 
-from pacman.config import load_config
+from pacman.config import Parser
 from pacman.highscore import load_highscores
 from mazegenerator import MazeGenerator
 
@@ -36,7 +36,8 @@ def main(argv: list[str] | None = None) -> int:
         print(USAGE, file=sys.stderr)
         return 1
 
-    config = load_config(config_path)
+    config = Parser(config_path).load_config()
+    print(config)
     highscores = load_highscores(config.highscore_filename)
 
     print("Pac-Man skeleton initialized.")
