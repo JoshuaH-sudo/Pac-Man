@@ -9,13 +9,13 @@ This checklist is organized to match the subject requirements and the current re
 - [ ] Define the core package layout for gameplay modules (`maze`, `game_state`, `entities`, `ui`, `renderer`, `input`).
 - [ ] Keep all new modules `flake8` and `mypy` clean.
 
-## 2. Configuration and Startup
-- [ ] Keep CLI behavior exactly `python3 pac-man.py config.json`.
-- [ ] Harden config parsing for missing files, invalid JSON, bad values, and unknown keys.
-- [ ] Support JSON comments beginning with `#` and `//`.
-- [ ] Clamp invalid values to safe defaults and print clear messages without tracebacks.
+## 2. Configuration and Startup (yanlu -- 04.06.-05.06.)
+- [x] Keep CLI behavior exactly `python3 pac-man.py config.json`.
+- [x] Harden config parsing for missing files, invalid JSON, bad values, and unknown keys.
+- [x] Support JSON comments beginning with `#` and `//`.
+- [x] Clamp invalid values to safe defaults and print clear messages without tracebacks.
 - [ ] Extend config structure if needed for graphics, controls, level count, timers, and cheat mode.
-- [ ] Update tests for all config edge cases.
+- [x] Update tests for all config edge cases.
 
 ## 3. Maze Generator Integration
 - [ ] Inspect the assigned `mazegenerator-00001-py3-none-any.whl` interface.

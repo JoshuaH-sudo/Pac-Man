@@ -8,6 +8,9 @@
   # Starting lives
   "lives": 3,
 
+  # Number of pacgums
+  "pacgum": 42,
+
   # Scoring
   "points_per_pacgum": 10,
   "points_per_super_pacgum": 50,

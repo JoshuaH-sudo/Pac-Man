@@ -11,6 +11,7 @@ from typing import Any
 
 _DEFAULT_LEVEL_WIDTH = 21
 _DEFAULT_LEVEL_HEIGHT = 21
+_MIN_LEVELS = 10
 
 
 class GameConfig(BaseModel):
@@ -18,7 +19,7 @@ class GameConfig(BaseModel):
 
     highscore_filename: str = Field(default="highscores.json", min_length=6)
     levels: list[tuple[int, int]] = Field(
-        default=[(_DEFAULT_LEVEL_WIDTH, _DEFAULT_LEVEL_HEIGHT)] * 10)
+        default=[(_DEFAULT_LEVEL_WIDTH, _DEFAULT_LEVEL_HEIGHT)] * _MIN_LEVELS)
     lives: int = Field(default=3, gt=0)
     pacgum: int = Field(default=42, ge=0)
     points_per_pacgum: int = Field(default=10, ge=0)
@@ -40,8 +41,8 @@ class GameConfig(BaseModel):
                 raise ValueError(f"Invalid maze height for level {i + 1}. "
                                  "Maze width needs to be a positive integer.")
 
-        if len(self.levels) < 10:
-            raise ValueError("There must be at least 10 levels.")
+        if len(self.levels) < _MIN_LEVELS:
+            raise ValueError(f"There must be at least {_MIN_LEVELS} levels.")
 
         return self
 
@@ -65,8 +66,8 @@ class Parser:
     def load_config(self) -> GameConfig:
         """Load config from path while tolerating invalid values and comments."""
         if not self.config_path.exists() or self.config_path.suffix.lower() != ".json":
-            Parser._print_config_error(f"ConfigError: {self.config_path} "
-                                       "is not a valid config file."
+            Parser._print_config_error(f"{self.config_path} "
+                                       "is not a valid config file. "
                                        "Using the default configuration instead.")
             return GameConfig()
 
@@ -74,14 +75,14 @@ class Parser:
             content = self.config_path.read_text(encoding="utf-8")
             parsed = json.loads(self._strip_json_comments(content))
         except (OSError, json.JSONDecodeError):
-            Parser._print_config_error(f"ConfigError: {self.config_path} "
-                                       "is not a valid config file."
+            Parser._print_config_error(f"{self.config_path} "
+                                       "is not a valid config file. "
                                        "Using the default configuration instead.")
             return GameConfig()
 
         if not isinstance(parsed, dict):
-            Parser._print_config_error(f"ConfigError: {self.config_path} "
-                                       "is not a valid config file."
+            Parser._print_config_error(f"{self.config_path} "
+                                       "is not a valid config file. "
                                        "Using the default configuration instead.")
             return GameConfig()
 
@@ -141,11 +142,15 @@ class Parser:
                                        "Using default value instead.")
             return default
 
-        if key == "lives":
+        if key == "lives" or key == "levels":
             if v < 1:
+                Parser._print_config_error(f"Value of {key} is too small. "
+                                           "Using default value instead.")
                 return default
         else:
             if v < 0:
+                Parser._print_config_error(f"Value of {key} is not a positive integer. "
+                                           "Using default value instead.")
                 return default
         return v
 
@@ -165,15 +170,16 @@ class Parser:
             -> list[tuple[int, int]]:
         """Convert value into a list of tuple of integers."""
         if not isinstance(value, list):
+            Parser._print_config_error("Levels are not correctly defined. "
+                                       "Using the default value instead.")
             return default
 
-        default_level = (21, 21)
+        default_level = (_DEFAULT_LEVEL_WIDTH, _DEFAULT_LEVEL_HEIGHT)
         res: list[tuple[int, int]] = []
         for i, level in enumerate(value):
             if not isinstance(level, dict):
-                print(f"Level {i + 1} is not correctly defined. "
-                      "Using the default value instead.",
-                      file=sys.stderr)
+                Parser._print_config_error(f"Level {i + 1} is not correctly defined. "
+                                           "Using the default value instead.")
                 res.append(default_level)
                 continue
             x = Parser._coerce_non_negative_int("levels", level.get("width"),
@@ -183,11 +189,11 @@ class Parser:
             res.append((x, y))
 
         length = len(res)
-        if length < 10:
-            Parser._print_config_error("There must be at least 10 levels. "
+        if length < _MIN_LEVELS:
+            Parser._print_config_error(f"There must be at least {_MIN_LEVELS} levels. "
                                        "Adding default levels until "
-                                       "there are 10 levels.")
-            missing = 10 - length
+                                       f"there are {_MIN_LEVELS} levels.")
+            missing = _MIN_LEVELS - length
             for i in range(missing):
                 res.append(default_level)
         return res
