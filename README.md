@@ -54,8 +54,9 @@ Unknown keys are ignored, and invalid values fall back to safe defaults.
 
 Default keys:
 - `highscore_filename`: `"highscores.json"`
-- `levels`: `10`
-- `width`, `height`: `21`, `21`
+- `levels`:
+    - `width`: `21`
+    - `height`: `21`
 - `lives`: `3`
 - `pacgum`: `42`
 - `points_per_pacgum`: `10`
