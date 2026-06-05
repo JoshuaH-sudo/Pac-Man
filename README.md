@@ -105,6 +105,7 @@ See `project_management/README.md` for scope.
 - UV docs: https://docs.astral.sh/uv/
 - flake8 docs: https://flake8.pycqa.org/
 - mypy docs: https://mypy.readthedocs.io/
+- Python arcade library docs: https://api.arcade.academy/en/stable/index.html
 
 AI usage in this repository:
 - Used AI to scaffold repetitive project setup tasks (UV packaging, Makefile baseline,

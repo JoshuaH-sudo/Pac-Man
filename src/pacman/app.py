@@ -12,6 +12,7 @@ from pacman.highscore import load_highscores
 from mazegenerator import MazeGenerator
 
 from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
+from pacman.ui.main_menu import MainMenu, InstructionView
 
 
 USAGE = "Usage: python3 pac-man.py config.json"
@@ -64,9 +65,10 @@ def main(argv: list[str] | None = None) -> int:
 
     # Create and setup the GameView
     game = GameView(maze_grid)
+    menu = MainMenu(InstructionView(game), game, highscores)
 
     # Show GameView on screen
-    window.show_view(game)
+    window.show_view(menu)
 
     # Start the arcade game loop
     arcade.run()
