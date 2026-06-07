@@ -65,7 +65,8 @@ def main(argv: list[str] | None = None) -> int:
 
     # Create and setup the GameView
     game = GameView(maze_grid)
-    menu = MainMenu(InstructionView(game), game, highscores)
+    menu = MainMenu(game, highscores)
+    menu.instruction.main_menu = menu
 
     # Show GameView on screen
     window.show_view(menu)

@@ -66,8 +66,8 @@ This checklist is organized to match the subject requirements and the current re
 - [ ] Move to the next level on completion.
 - [ ] End the game with victory after the final level.
 
-## 9. User Interface
-- [ ] Build a main menu with Start Game, View Highscores, Instructions, and Exit.
+## 9. User Interface (yanlu)
+- [x] Build a main menu with Start Game, View Highscores, Instructions, and Exit. (05.06.-07.06.)
 - [ ] Build an always-visible HUD with score, lives, level, and remaining time.
 - [ ] Build a pause menu with Resume and Return to Main Menu.
 - [ ] Build a game-over screen with final score and highscore name entry.
@@ -81,7 +81,7 @@ This checklist is organized to match the subject requirements and the current re
 - [ ] Validate player names: max 10 chars, alphanumeric and spaces only.
 - [ ] Validate scores as non-negative integers.
 - [ ] Keep only the top 10 sorted entries.
-- [ ] Display highscores from the main menu.
+- [x] Display highscores from the main menu.
 
 ## 11. Cheat Mode for Evaluation
 - [ ] Add a clear way to activate cheat mode.
