@@ -95,6 +95,40 @@ class MovementController:
                 self._desired_direction = self._queued_direction
                 self._queued_direction = (0, 0)
 
+        # When a direction is blocked in the current cell (e.g. dead-end exit),
+        # do not stop immediately at cell-boundary rounding. Keep moving until
+        # we reach the center stop point of the dead-end cell.
+        if (
+            self._current_direction != (0, 0)
+            and not direction_is_open(cell_value, self._current_direction)
+        ):
+            stop_x = nearest_cell_center(player_center_x, offset_x, cell_size)
+            stop_y = nearest_cell_center(player_center_y, offset_y, cell_size)
+            stop_tolerance = max(1.0, cell_size * 0.1)
+
+            distance_to_stop = 0.0
+            approach_x = player_center_x
+            approach_y = player_center_y
+            if self._current_direction[0] != 0:
+                distance_to_stop = (
+                    (stop_x - player_center_x) * self._current_direction[0]
+                )
+                # Keep horizontal motion continuous; only align to the current lane.
+                approach_y = nearest_cell_center(player_center_y, offset_y, cell_size)
+            elif self._current_direction[1] != 0:
+                distance_to_stop = (
+                    (stop_y - player_center_y) * self._current_direction[1]
+                )
+                # Keep vertical motion continuous; only align to the current lane.
+                approach_x = nearest_cell_center(player_center_x, offset_x, cell_size)
+
+            if distance_to_stop > stop_tolerance:
+                return self._current_direction, approach_x, approach_y, False
+
+            self._current_direction = (0, 0)
+            self._desired_direction = (0, 0)
+            return self._current_direction, stop_x, stop_y, False
+
         previous_direction = self._current_direction
         self._current_direction, self._desired_direction = coerce_blocked_directions(
             self._current_direction,
