@@ -77,6 +77,9 @@ def resolve_player_direction(
 ) -> tuple[Direction, float, float]:
     """Keep travel axis-aligned and snap turns onto the cell grid."""
     alignment_tolerance = max(1.0, cell_size * 0.25)
+    corner_scale = max(1.0, cell_size / 8.0)
+    pre_turn_pixels = max(1.0, round(3.0 * corner_scale))
+    post_turn_pixels = max(1.0, round(4.0 * corner_scale))
     next_direction = (
         current_direction
         if current_direction != (0, 0)
@@ -91,8 +94,8 @@ def resolve_player_direction(
             snapped_y = lane_y
             if desired_direction[1] != 0:
                 turn_x = nearest_cell_center(center_x, offset_x, cell_size)
-                if abs(center_x - turn_x) <= alignment_tolerance:
-                    snapped_x = turn_x
+                turn_offset_x = center_x - turn_x
+                if -pre_turn_pixels <= turn_offset_x <= post_turn_pixels:
                     next_direction = desired_direction
             elif desired_direction[0] != 0:
                 next_direction = desired_direction
@@ -103,8 +106,8 @@ def resolve_player_direction(
             snapped_x = lane_x
             if desired_direction[0] != 0:
                 turn_y = nearest_cell_center(center_y, offset_y, cell_size)
-                if abs(center_y - turn_y) <= alignment_tolerance:
-                    snapped_y = turn_y
+                turn_offset_y = center_y - turn_y
+                if -pre_turn_pixels <= turn_offset_y <= post_turn_pixels:
                     next_direction = desired_direction
             elif desired_direction[1] != 0:
                 next_direction = desired_direction

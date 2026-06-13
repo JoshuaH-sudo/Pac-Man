@@ -2,7 +2,7 @@ import arcade
 import arcade.gui
 
 from pacman.highscore import HighscoreEntry
-from pacman.window import WINDOW_WIDTH, WINDOW_HEIGHT, GameView
+from pacman.window import GameView
 
 
 class InstructionView(arcade.View):
@@ -16,14 +16,18 @@ class InstructionView(arcade.View):
         # Box layout for buttons and texts
         box = arcade.gui.UIBoxLayout(vertical=True, space_between=20)
         # Title
-        box.add(arcade.gui.UILabel(
-            text="Instructions",
-            font_size=40,
-            bold=True,
-        ))
+        box.add(
+            arcade.gui.UILabel(
+                text="Instructions",
+                font_size=40,
+                bold=True,
+            )
+        )
 
         # Instruction texts
-        instructions_box = arcade.gui.UIBoxLayout(vertical=True, space_between=4, align="left")
+        instructions_box = arcade.gui.UIBoxLayout(
+            vertical=True, space_between=4, align="left"
+        )
         for line in [
             "Use arrow keys or WASD to move Pac-Man.",
             "Eat all pacgums within the time limit to complete the level.",
@@ -31,10 +35,12 @@ class InstructionView(arcade.View):
             "Avoid ghosts — you lose a life when touched by a ghost.",
             "Game over when all lives are lost.",
         ]:
-            instructions_box.add(arcade.gui.UILabel(
-                text=line,
-                font_size=18,
-            ))
+            instructions_box.add(
+                arcade.gui.UILabel(
+                    text=line,
+                    font_size=18,
+                )
+            )
         box.add(instructions_box)
 
         # Spacer between text and buttons
@@ -91,8 +97,8 @@ class MainMenu(arcade.View):
     - view instructions
     - exit
     """
-    def __init__(self,
-                 game: GameView, highscores: list[HighscoreEntry]) -> None:
+
+    def __init__(self, game: GameView, highscores: list[HighscoreEntry]) -> None:
         super().__init__()
         self.manager = arcade.gui.UIManager()
 
@@ -103,12 +109,11 @@ class MainMenu(arcade.View):
         # Outer Box
         outer_box = arcade.gui.UIBoxLayout(vertical=True, space_between=20)
         # Title
-        outer_box.add(arcade.gui.UILabel(
-            text="Pac-Man",
-            font_size=40,
-            bold=True,
-            text_color=arcade.color.YELLOW
-        ))
+        outer_box.add(
+            arcade.gui.UILabel(
+                text="Pac-Man", font_size=40, bold=True, text_color=arcade.color.YELLOW
+            )
+        )
 
         # Buttons
         button_box = arcade.gui.UIBoxLayout(vertical=True, space_between=10)
@@ -125,15 +130,21 @@ class MainMenu(arcade.View):
 
         # Highscores
         if highscores:
-            outer_box.add(arcade.gui.UILabel(
-                text="High Scores:",
-                font_size=18,
-                bold=True,
-            ))
+            outer_box.add(
+                arcade.gui.UILabel(
+                    text="High Scores:",
+                    font_size=18,
+                    bold=True,
+                )
+            )
 
             # Split into 2 columns
-            left_col = arcade.gui.UIBoxLayout(vertical=True, space_between = 4, align="left")
-            right_col = arcade.gui.UIBoxLayout(vertical=True, space_between = 4, align="left")
+            left_col = arcade.gui.UIBoxLayout(
+                vertical=True, space_between=4, align="left"
+            )
+            right_col = arcade.gui.UIBoxLayout(
+                vertical=True, space_between=4, align="left"
+            )
 
             for i, entry in enumerate(self.highscores):
                 label = arcade.gui.UILabel(
@@ -145,7 +156,9 @@ class MainMenu(arcade.View):
                 else:
                     right_col.add(label)
 
-            scores_row = arcade.gui.UIBoxLayout(vertical=False, space_between=40, align="top")
+            scores_row = arcade.gui.UIBoxLayout(
+                vertical=False, space_between=40, align="top"
+            )
             scores_row.add(left_col)
             scores_row.add(right_col)
             outer_box.add(scores_row)

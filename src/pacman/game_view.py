@@ -179,6 +179,7 @@ class GameView(arcade.View):
             cell_size,
             offset_x,
             offset_y,
+            max(abs(self._player.change_x), abs(self._player.change_y)),
         )
         if self._debug_enabled:
             current_direction, desired_direction, queued_direction, spawn_lock = (

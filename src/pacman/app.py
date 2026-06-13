@@ -15,7 +15,7 @@ from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
 from pacman.ui.main_menu import MainMenu
 
 USAGE = "Usage: python3 pac-man.py config.json"
-MAZE_SIZE = (21, 21)
+MAZE_SIZE = (10, 10)
 
 
 def _print_error(message: str) -> None:
