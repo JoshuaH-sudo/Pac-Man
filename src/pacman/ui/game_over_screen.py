@@ -1,7 +1,10 @@
 import arcade
 import arcade.gui
+from typing import Any, cast
 
-from src.pacman.window import GameView
+from pacman.window import GameView
+
+UISpace = cast(Any, arcade.gui.UISpace)
 
 
 class GameOverScreen(arcade.View):
@@ -29,7 +32,7 @@ class GameOverScreen(arcade.View):
         ))
 
         # Spacer between text and buttons
-        box.add(arcade.gui.UISpace(height=20))
+        box.add(UISpace(height=20))
 
         # Buttons
         button_row = arcade.gui.UIBoxLayout(vertical=False, space_between=20)

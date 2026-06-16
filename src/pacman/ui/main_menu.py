@@ -1,8 +1,11 @@
 import arcade
 import arcade.gui
+from typing import Any, cast
 
 from pacman.highscore import HighscoreEntry
 from pacman.window import GameView
+
+UISpace = cast(Any, arcade.gui.UISpace)
 
 
 class InstructionView(arcade.View):
@@ -39,7 +42,7 @@ class InstructionView(arcade.View):
         box.add(instructions_box)
 
         # Spacer between text and buttons
-        box.add(arcade.gui.UISpace(height=20))
+        box.add(UISpace(height=20))
 
         # Buttons
         button_row = arcade.gui.UIBoxLayout(vertical=False, space_between=20)
@@ -123,7 +126,7 @@ class MainMenu(arcade.View):
         outer_box.add(button_box)
 
         # Spacer between text and buttons
-        outer_box.add(arcade.gui.UISpace(height=20))
+        outer_box.add(UISpace(height=20))
 
         # Highscores
         if highscores:
