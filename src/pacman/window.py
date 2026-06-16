@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Sequence
+from typing import Sequence, TYPE_CHECKING
 
 import arcade
 from arcade.types import Color
 
+from pacman.config import GameConfig
 from pacman.entities import Item, Player
+if TYPE_CHECKING:
+    from pacman.ui.main_menu import MainMenu
 
 WINDOW_WIDTH = 1024
 WINDOW_HEIGHT = 768
@@ -175,9 +178,13 @@ class MazeDisplay:
 class GameView(arcade.View):
     """Main game view that currently renders the generated maze walls."""
 
-    def __init__(self, maze_grid: Sequence[Sequence[int]]):
+    def __init__(self, maze_grid: Sequence[Sequence[int]], config: GameConfig,
+                 main_menu: MainMenu | None = None) -> None:
         super().__init__()
         self._maze_display = MazeDisplay(maze_grid)
+        self.config = config
+        self.main_menu = main_menu
+
         self._player_cell_x = self._maze_display.cols / 2.0
         self._player_cell_y = self._maze_display.rows / 2.0
         self._item_cell_x = min(
@@ -192,10 +199,10 @@ class GameView(arcade.View):
             speed=PLAYER_MOVEMENT_SPEED,
             scale=1.0,
         )
-        self._players: arcade.SpriteList = arcade.SpriteList()
+        self._players: arcade.SpriteList[Player] = arcade.SpriteList()
         self._players.append(self._player)
 
-        self._items: arcade.SpriteList = arcade.SpriteList()
+        self._items: arcade.SpriteList[Item] = arcade.SpriteList()
         self._items.append(
             Item(
                 center_x=0.0,
@@ -244,11 +251,21 @@ class GameView(arcade.View):
         if symbol in (arcade.key.DOWN, arcade.key.S):
             self._move_down = True
 
+        ##################################
         # TESTING: Shortcut to end screens
+        ##################################
         if symbol == arcade.key.O:
-            self.window.show_view(EndScreen(message="Game over!", color=arcade.color.WHITE, score=0, file="highscores.json", game=self, main_menu=None))
+            self.window.show_view(EndScreen(message="Game over!",
+                                            color=arcade.color.WHITE,
+                                            score=0,
+                                            file=self.config.highscore_filename,
+                                            game=self, main_menu=self.main_menu))
         if symbol == arcade.key.V:
-            self.window.show_view(EndScreen(message="You won!", color=arcade.color.YELLOW, score=0, file="highscores.json", game=self, main_menu=None))
+            self.window.show_view(EndScreen(message="You won!",
+                                            color=arcade.color.YELLOW,
+                                            score=0,
+                                            file=self.config.highscore_filename,
+                                            game=self, main_menu=self.main_menu))
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers

@@ -13,7 +13,7 @@ UISpace = cast(Any, arcade.gui.UISpace)
 class EndScreen(arcade.View):
     def __init__(self, message: str, color: arcade.types.Color,
                  score: int, file: str, game: GameView,
-                 main_menu: MainMenu | None) -> None:
+                 main_menu: MainMenu | None = None) -> None:
         super().__init__()
 
         self.score = score
