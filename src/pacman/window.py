@@ -232,8 +232,7 @@ class GameView(arcade.View):
         self._keep_player_on_screen()
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
-        from pacman.ui.game_over_screen import GameOverScreen
-        from pacman.ui.victory_screen import VictoryScreen
+        from pacman.ui.end_screen import EndScreen
 
         del modifiers
         if symbol in (arcade.key.LEFT, arcade.key.A):
@@ -247,9 +246,9 @@ class GameView(arcade.View):
 
         # TESTING: Shortcut to end screens
         if symbol == arcade.key.O:
-            self.window.show_view(GameOverScreen(score=0, file="", game=self))
+            self.window.show_view(EndScreen(message="Game over!", color=arcade.color.WHITE, score=0, file="highscores.json", game=self, main_menu=None))
         if symbol == arcade.key.V:
-            self.window.show_view(VictoryScreen(score=0, file="", game=self))
+            self.window.show_view(EndScreen(message="You won!", color=arcade.color.YELLOW, score=0, file="highscores.json", game=self, main_menu=None))
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers

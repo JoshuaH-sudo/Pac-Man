@@ -6,9 +6,10 @@ from dataclasses import asdict, dataclass
 import json
 from pathlib import Path
 import re
+import sys
 from typing import Any
 
-_NAME_PATTERN = re.compile(r"^[A-Za-z0-9 ]+$")
+_NAME_PATTERN = re.compile(r"^[A-Za-z0-9_]+$")
 
 
 @dataclass(slots=True)
@@ -23,6 +24,10 @@ def sanitize_name(raw_name: str) -> str:
     """Normalize a player name to the project constraints."""
     name = raw_name.strip()[:10]
     if not name or not _NAME_PATTERN.fullmatch(name):
+        print("Invalid player name. Using default instead.\n"
+              "Player name can only consist of max 10 alphanumeric characters"
+              " and underscores.",
+              file=sys.stderr)
         return "PLAYER"
     return name
 
