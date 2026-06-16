@@ -2,7 +2,7 @@ import arcade
 import arcade.gui
 
 from pacman.highscore import HighscoreEntry
-from pacman.window import WINDOW_WIDTH, WINDOW_HEIGHT, GameView
+from pacman.window import GameView
 
 
 class InstructionView(arcade.View):
@@ -23,7 +23,8 @@ class InstructionView(arcade.View):
         ))
 
         # Instruction texts
-        instructions_box = arcade.gui.UIBoxLayout(vertical=True, space_between=4, align="left")
+        instructions_box = arcade.gui.UIBoxLayout(vertical=True, space_between=4,
+                                                  align="left")
         for line in [
             "Use arrow keys or WASD to move Pac-Man.",
             "Eat all pacgums within the time limit to complete the level.",
@@ -65,7 +66,8 @@ class InstructionView(arcade.View):
 
         @back_button.event("on_click")
         def on_click_back(event: arcade.gui.UIOnClickEvent) -> None:
-            self.window.show_view(self.main_menu)
+            if self.main_menu:
+                self.window.show_view(self.main_menu)
 
         @exit_button.event("on_click")
         def on_click_exit_button(event: arcade.gui.UIOnClickEvent) -> None:
@@ -132,8 +134,10 @@ class MainMenu(arcade.View):
             ))
 
             # Split into 2 columns
-            left_col = arcade.gui.UIBoxLayout(vertical=True, space_between = 4, align="left")
-            right_col = arcade.gui.UIBoxLayout(vertical=True, space_between = 4, align="left")
+            left_col = arcade.gui.UIBoxLayout(vertical=True, space_between=4,
+                                              align="left")
+            right_col = arcade.gui.UIBoxLayout(vertical=True, space_between=4,
+                                               align="left")
 
             for i, entry in enumerate(self.highscores):
                 label = arcade.gui.UILabel(
@@ -145,7 +149,8 @@ class MainMenu(arcade.View):
                 else:
                     right_col.add(label)
 
-            scores_row = arcade.gui.UIBoxLayout(vertical=False, space_between=40, align="top")
+            scores_row = arcade.gui.UIBoxLayout(vertical=False, space_between=40,
+                                                align="top")
             scores_row.add(left_col)
             scores_row.add(right_col)
             outer_box.add(scores_row)

@@ -12,7 +12,7 @@ from pacman.highscore import load_highscores
 from mazegenerator import MazeGenerator
 
 from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
-from pacman.ui.main_menu import MainMenu, InstructionView
+from pacman.ui.main_menu import MainMenu
 
 
 USAGE = "Usage: python3 pac-man.py config.json"
