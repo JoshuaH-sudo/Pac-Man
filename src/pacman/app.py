@@ -8,7 +8,6 @@ import sys
 import arcade
 
 from pacman.config import Parser
-from pacman.highscore import load_highscores
 from mazegenerator import MazeGenerator
 
 from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
@@ -39,12 +38,11 @@ def main(argv: list[str] | None = None) -> int:
 
     config = Parser(config_path).load_config()
     print(config)
-    highscores = load_highscores(config.highscore_filename)
 
     print("Pac-Man skeleton initialized.")
     print(f"Config source: {config_path}")
     print(f"Configured lives: {config.lives}")
-    print(f"Loaded highscores: {len(highscores)}")
+    # print(f"Loaded highscores: {len(highscores)}")
 
     # Create a simple 20x20 maze
     maze_gen = MazeGenerator(size=(20, 20))
@@ -65,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
 
     # Create and setup the GameView
     game = GameView(maze_grid, config)
-    menu = MainMenu(game, highscores)
+    menu = MainMenu(game, config)
     menu.instruction.main_menu = menu
     game.main_menu = menu
 

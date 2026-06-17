@@ -258,14 +258,14 @@ class GameView(arcade.View):
             self.window.show_view(EndScreen(message="Game over!",
                                             color=arcade.color.WHITE,
                                             score=0,
-                                            file=self.config.highscore_filename,
-                                            game=self, main_menu=self.main_menu))
+                                            config=self.config,
+                                            game=self))
         if symbol == arcade.key.V:
             self.window.show_view(EndScreen(message="You won!",
                                             color=arcade.color.YELLOW,
                                             score=0,
-                                            file=self.config.highscore_filename,
-                                            game=self, main_menu=self.main_menu))
+                                            config=self.config,
+                                            game=self))
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers

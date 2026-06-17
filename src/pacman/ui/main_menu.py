@@ -2,7 +2,8 @@ import arcade
 import arcade.gui
 from typing import Any, cast
 
-from pacman.highscore import HighscoreEntry
+from pacman.config import GameConfig
+from pacman.highscore import HighScore
 from pacman.window import GameView
 
 UISpace = cast(Any, arcade.gui.UISpace)
@@ -97,13 +98,13 @@ class MainMenu(arcade.View):
     - exit
     """
     def __init__(self,
-                 game: GameView, highscores: list[HighscoreEntry]) -> None:
+                 game: GameView, config: GameConfig) -> None:
         super().__init__()
         self.manager = arcade.gui.UIManager()
 
         self.instruction = InstructionView(game)
         self.game = game
-        self.highscores = highscores
+        self.highscores = HighScore(config.highscore_filename).load_highscores()
 
         # Outer Box
         outer_box = arcade.gui.UIBoxLayout(vertical=True, space_between=20)
@@ -129,7 +130,7 @@ class MainMenu(arcade.View):
         outer_box.add(UISpace(height=20))
 
         # Highscores
-        if highscores:
+        if self.highscores:
             outer_box.add(arcade.gui.UILabel(
                 text="High Scores:",
                 font_size=18,

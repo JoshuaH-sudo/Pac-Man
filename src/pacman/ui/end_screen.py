@@ -2,8 +2,8 @@ import arcade
 import arcade.gui
 from typing import Any, cast
 
-from pacman.highscore import (HighscoreEntry, load_highscores,
-                              save_highscores, sanitize_name)
+from pacman.config import GameConfig
+from pacman.highscore import HighScore, HighscoreEntry
 from pacman.ui.main_menu import MainMenu
 from pacman.window import GameView
 
@@ -12,15 +12,15 @@ UISpace = cast(Any, arcade.gui.UISpace)
 
 class EndScreen(arcade.View):
     def __init__(self, message: str, color: arcade.types.Color,
-                 score: int, file: str, game: GameView,
-                 main_menu: MainMenu | None = None) -> None:
+                 score: int, config: GameConfig, game: GameView) -> None:
         super().__init__()
 
         self.score = score
-        self.file = file
+        self.config = config
         self.game = game
-        self.main_menu = main_menu
+        self.highscore = HighScore(self.config.highscore_filename)
 
+        self.main_menu = None
         self._saved = False
 
         self.manager = arcade.gui.UIManager()
@@ -83,6 +83,9 @@ class EndScreen(arcade.View):
 
         @back_button.event("on_click")
         def on_click_back(event: arcade.gui.UIOnClickEvent) -> None:
+            if not self.main_menu:
+                self.main_menu = MainMenu(game, config)
+                self.main_menu.instruction.main_menu = self.main_menu
             if self.main_menu:
                 self.window.show_view(self.main_menu)
 
@@ -112,8 +115,8 @@ class EndScreen(arcade.View):
 
     def _save_score(self) -> None:
         if not self._saved:
-            name = sanitize_name(self.input_text.text)
-            existing = load_highscores(self.file)
+            name = HighScore.sanitize_name(self.input_text.text)
+            existing = self.highscore.load_highscores()
             existing.append(HighscoreEntry(name=name, score=self.score))
-            save_highscores(self.file, existing)
+            self.highscore.save_highscores(existing)
             self._saved = True
