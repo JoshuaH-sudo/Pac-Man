@@ -6,7 +6,7 @@ from typing import Any, cast, Callable
 from pacman.config import GameConfig
 from pacman.highscore import HighScore, HighscoreEntry
 from pacman.ui.main_menu import MainMenu
-from pacman.window import GameView
+from pacman.window import GameView, WINDOW_WIDTH, WINDOW_HEIGHT
 
 UISpace = cast(Any, arcade.gui.UISpace)
 
@@ -110,6 +110,10 @@ class EndScreen(arcade.View):
         def on_click_exit_button(event: arcade.gui.UIOnClickEvent) -> None:
             arcade.exit()
 
+        @save_button.event("on_click")
+        def on_click_save_button(event: arcade.gui.UIOnClickEvent) -> None:
+            self._save_score()
+
     def on_show_view(self) -> None:
         self.window.background_color = arcade.color.DARK_BLUE_GRAY
         self.manager.enable()
@@ -119,12 +123,10 @@ class EndScreen(arcade.View):
 
     def on_draw(self) -> None:
         self.clear()
+        if self._saved:
+            arcade.Text("Saved!", WINDOW_WIDTH / 2 - 36, WINDOW_HEIGHT / 2 - 118,
+                        font_size=16, align="center").draw()
         self.manager.draw()
-
-    def on_key_press(self, symbol: int, modifiers: int) -> None:
-        del modifiers
-        if symbol == arcade.key.ENTER:
-            self._save_score()
 
     def _save_score(self) -> None:
         if not self._saved:
