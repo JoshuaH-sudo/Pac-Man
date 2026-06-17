@@ -14,8 +14,9 @@ UISpace = cast(Any, arcade.gui.UISpace)
 class _EnterAwareInputText(arcade.gui.UIInputText):
     """UIInputText that fires a callback on Enter instead of inserting a newline."""
 
-    def __init__(self, on_enter: Callable[[], None], **kwargs: object) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, on_enter: Callable[[], None], width: float = 300,
+                 height: float = 35, font_size: float = 18) -> None:
+        super().__init__(width=width, height=height, font_size=font_size)
         self._on_enter = on_enter
 
     def on_event(self, event: arcade.gui.UIEvent) -> bool | None:
