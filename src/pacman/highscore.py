@@ -67,11 +67,13 @@ class HighScore:
         try:
             loaded = json.loads(score_path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
-            print(f"Failed to load highscores from file: {self.path}.", file=sys.stderr)
+            print(f"No highscores can be loaded from file: {self.path}.",
+                  file=sys.stderr)
             return []
 
         if not isinstance(loaded, list):
-            print(f"Failed to load highscores from file: {self.path}.", file=sys.stderr)
+            print(f"No highscores can be loaded highscores from file: {self.path}.",
+                  file=sys.stderr)
             return []
 
         entries = [entry for item in loaded

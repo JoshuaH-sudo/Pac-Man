@@ -1,6 +1,7 @@
 import arcade
 import arcade.gui
-from typing import Any, cast
+from arcade.gui.events import UIKeyPressEvent, UITextInputEvent
+from typing import Any, cast, Callable
 
 from pacman.config import GameConfig
 from pacman.highscore import HighScore, HighscoreEntry
@@ -8,6 +9,22 @@ from pacman.ui.main_menu import MainMenu
 from pacman.window import GameView
 
 UISpace = cast(Any, arcade.gui.UISpace)
+
+
+class _EnterAwareInputText(arcade.gui.UIInputText):
+    """UIInputText that fires a callback on Enter instead of inserting a newline."""
+
+    def __init__(self, on_enter: Callable[[], None], **kwargs: object) -> None:
+        super().__init__(**kwargs)
+        self._on_enter = on_enter
+
+    def on_event(self, event: arcade.gui.UIEvent) -> bool | None:
+        if isinstance(event, UIKeyPressEvent) and event.symbol == arcade.key.ENTER:
+            self._on_enter()
+            return True
+        if isinstance(event, UITextInputEvent) and event.text in ("\n", "\r"):
+            return True  # suppress newline character insertion
+        return super().on_event(event)
 
 
 class EndScreen(arcade.View):
@@ -47,8 +64,8 @@ class EndScreen(arcade.View):
             text="Enter your name to save your score:",
             font_size=16,
         ))
-        self.input_text = arcade.gui.UIInputText(width=250, height=30,
-                                                 font_size=16).with_border()
+        self.input_text = _EnterAwareInputText(on_enter=self._save_score, width=300,
+                                               height=35, font_size=18)
         save_button = arcade.gui.UIFlatButton(text="Save", width=50, height=30)
         input_row = arcade.gui.UIBoxLayout(vertical=False, space_between=10)
         input_row.add(self.input_text)
@@ -92,10 +109,6 @@ class EndScreen(arcade.View):
         @exit_button.event("on_click")
         def on_click_exit_button(event: arcade.gui.UIOnClickEvent) -> None:
             arcade.exit()
-
-        @save_button.event("on_click")
-        def on_click_save_button(event: arcade.gui.UIOnClickEvent) -> None:
-            self._save_score()
 
     def on_show_view(self) -> None:
         self.window.background_color = arcade.color.DARK_BLUE_GRAY
