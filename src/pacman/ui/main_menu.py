@@ -1,8 +1,12 @@
 import arcade
 import arcade.gui
+from typing import Any, cast
 
-from pacman.highscore import HighscoreEntry
 from pacman.window import GameView
+from pacman.config import GameConfig
+from pacman.highscore import HighScore
+
+UISpace = cast(Any, arcade.gui.UISpace)
 
 
 class InstructionView(arcade.View):
@@ -44,7 +48,7 @@ class InstructionView(arcade.View):
         box.add(instructions_box)
 
         # Spacer between text and buttons
-        box.add(arcade.gui.UISpace(height=20))
+        box.add(UISpace(height=20))
 
         # Buttons
         button_row = arcade.gui.UIBoxLayout(vertical=False, space_between=20)
@@ -71,7 +75,8 @@ class InstructionView(arcade.View):
 
         @back_button.event("on_click")
         def on_click_back(event: arcade.gui.UIOnClickEvent) -> None:
-            self.window.show_view(self.main_menu)
+            if self.main_menu:
+                self.window.show_view(self.main_menu)
 
         @exit_button.event("on_click")
         def on_click_exit_button(event: arcade.gui.UIOnClickEvent) -> None:
@@ -97,14 +102,14 @@ class MainMenu(arcade.View):
     - view instructions
     - exit
     """
-
-    def __init__(self, game: GameView, highscores: list[HighscoreEntry]) -> None:
+    def __init__(self,
+                 game: GameView, config: GameConfig) -> None:
         super().__init__()
         self.manager = arcade.gui.UIManager()
 
         self.instruction = InstructionView(game)
         self.game = game
-        self.highscores = highscores
+        self.highscores = HighScore(config.highscore_filename).load_highscores()
 
         # Outer Box
         outer_box = arcade.gui.UIBoxLayout(vertical=True, space_between=20)
@@ -126,25 +131,21 @@ class MainMenu(arcade.View):
         outer_box.add(button_box)
 
         # Spacer between text and buttons
-        outer_box.add(arcade.gui.UISpace(height=20))
+        outer_box.add(UISpace(height=20))
 
         # Highscores
-        if highscores:
-            outer_box.add(
-                arcade.gui.UILabel(
-                    text="High Scores:",
-                    font_size=18,
-                    bold=True,
-                )
-            )
+        if self.highscores:
+            outer_box.add(arcade.gui.UILabel(
+                text="High Scores:",
+                font_size=18,
+                bold=True,
+            ))
 
             # Split into 2 columns
-            left_col = arcade.gui.UIBoxLayout(
-                vertical=True, space_between=4, align="left"
-            )
-            right_col = arcade.gui.UIBoxLayout(
-                vertical=True, space_between=4, align="left"
-            )
+            left_col = arcade.gui.UIBoxLayout(vertical=True, space_between=4,
+                                              align="left")
+            right_col = arcade.gui.UIBoxLayout(vertical=True, space_between=4,
+                                               align="left")
 
             for i, entry in enumerate(self.highscores):
                 label = arcade.gui.UILabel(
@@ -156,9 +157,8 @@ class MainMenu(arcade.View):
                 else:
                     right_col.add(label)
 
-            scores_row = arcade.gui.UIBoxLayout(
-                vertical=False, space_between=40, align="top"
-            )
+            scores_row = arcade.gui.UIBoxLayout(vertical=False, space_between=40,
+                                                align="top")
             scores_row.add(left_col)
             scores_row.add(right_col)
             outer_box.add(scores_row)

@@ -4,17 +4,15 @@ from pathlib import Path
 
 from pacman.highscore import (
     HighscoreEntry,
-    load_highscores,
-    sanitize_name,
-    save_highscores,
+    HighScore
 )
 
 
 def test_sanitize_name_limits_format_and_length() -> None:
     """Names should stay compliant with project constraints."""
-    assert sanitize_name("Valid Name") == "Valid Name"
-    assert sanitize_name("name-with-symbol") == "PLAYER"
-    assert sanitize_name("ABCDEFGHIJKL") == "ABCDEFGHIJ"
+    assert HighScore.sanitize_name("Valid Name") == "Valid Name"
+    assert HighScore.sanitize_name("name-with-symbol") == "PLAYER"
+    assert HighScore.sanitize_name("ABCDEFGHIJKL") == "ABCDEFGHIJ"
 
 
 def test_load_and_save_highscores_keep_top_ten(tmp_path: Path) -> None:
@@ -22,8 +20,8 @@ def test_load_and_save_highscores_keep_top_ten(tmp_path: Path) -> None:
     score_file = tmp_path / "scores.json"
     scores = [HighscoreEntry(name=f"P{i}", score=i) for i in range(20)]
 
-    save_highscores(score_file, scores)
-    loaded = load_highscores(score_file)
+    HighScore(score_file).save_highscores(scores)
+    loaded = HighScore(score_file).load_highscores()
 
     assert len(loaded) == 10
     assert loaded[0].score == 19
