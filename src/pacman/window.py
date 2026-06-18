@@ -240,6 +240,7 @@ class GameView(arcade.View):
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         from pacman.ui.end_screen import EndScreen
+        from pacman.ui.pause_menu import PauseMenu
 
         del modifiers
         if symbol in (arcade.key.LEFT, arcade.key.A):
@@ -252,7 +253,7 @@ class GameView(arcade.View):
             self._move_down = True
 
         ##################################
-        # TESTING: Shortcut to end screens
+        # TESTING: Shortcut to pause and end screens
         ##################################
         if symbol == arcade.key.O:
             self.window.show_view(EndScreen(message="Game over!",
@@ -266,6 +267,10 @@ class GameView(arcade.View):
                                             score=0,
                                             config=self.config,
                                             game=self))
+
+        if symbol == arcade.key.P:
+            if self.main_menu:
+                self.window.show_view(PauseMenu(game=self, main_menu=self.main_menu))
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
