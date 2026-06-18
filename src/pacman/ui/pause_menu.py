@@ -78,5 +78,10 @@ class PauseMenu(arcade.View):
         self.manager.disable()
 
     def on_draw(self) -> None:
-        self.clear()
+        self.game.on_draw()    # draw the live game frame first
+        # semi-transparent dark overlay over the whole screen
+        arcade.draw_lrbt_rectangle_filled(
+            0, self.window.width, 0, self.window.height,
+            (0, 0, 20, 180)    # RGBA: near-black, ~70% opaque
+        )
         self.manager.draw()
