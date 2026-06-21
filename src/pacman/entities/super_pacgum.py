@@ -13,6 +13,8 @@ SUPER_ITEM_SHEET_PATH = ASSETS_DIR / "super-pacgum.png"
 class SuperPacgum(Entity):
     """Collectible super pacgum sprite with a looping 2x2 pulse animation."""
 
+    POINT_VALUE = 50
+
     def __init__(
         self,
         center_x: float,

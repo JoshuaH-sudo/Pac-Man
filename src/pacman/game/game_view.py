@@ -21,6 +21,7 @@ from pacman.core import (
     nearest_cell_index,
 )
 from pacman.entities import Ghost, Pacgum, Pacman, SuperPacgum
+from pacman.game.state import GameState
 from pacman.maze import (
     MazeDisplay,
     build_corner_cells,
@@ -122,6 +123,7 @@ class GameView(arcade.View):
             )
 
         self._movement = MovementController(choose_initial_direction(center_cell_value))
+        self.state = GameState()
         self.config: GameConfig | None = None
         self.main_menu: MainMenu | None = None
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
@@ -215,6 +217,7 @@ class GameView(arcade.View):
                 direction_is_open(cell_value, (0, -1)),
                 direction_is_open(cell_value, (-1, 0)),
             )
+        self._collect_item_collisions()
         self._players.update_animation(delta_time=delta_time)
         self._items.update_animation(delta_time=delta_time)
         self._keep_player_on_screen()
@@ -239,7 +242,7 @@ class GameView(arcade.View):
                 EndScreen(
                     message="Game over!",
                     color=arcade.color.WHITE,
-                    score=0,
+                    score=self.state.score,
                     config=self.config,
                     game=self,
                 )
@@ -251,7 +254,7 @@ class GameView(arcade.View):
                 EndScreen(
                     message="You won!",
                     color=arcade.color.YELLOW,
-                    score=0,
+                    score=self.state.score,
                     config=self.config,
                     game=self,
                 )
@@ -372,6 +375,24 @@ class GameView(arcade.View):
                 offset_x=offset_x,
                 offset_y=offset_y,
             )
+
+    def _collect_item_collisions(self) -> None:
+        """Consume collided pacgums and apply score updates."""
+        collided_items = arcade.check_for_collision_with_list(self._player, self._items)
+        for item in collided_items:
+            item.remove_from_sprite_lists()
+            if isinstance(item, SuperPacgum):
+                self.state.add_super_pacgum(
+                    self.config.points_per_super_pacgum
+                    if self.config is not None
+                    else SuperPacgum.POINT_VALUE
+                )
+            elif isinstance(item, Pacgum):
+                self.state.add_pacgum(
+                    self.config.points_per_pacgum
+                    if self.config is not None
+                    else Pacgum.POINT_VALUE
+                )
 
     def _current_cell_value(self) -> int:
         """Return wall flags for the maze cell currently containing the player."""

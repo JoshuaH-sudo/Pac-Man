@@ -13,6 +13,8 @@ ITEM_SHEET_PATH = ASSETS_DIR / "pacgum.png"
 class Pacgum(Entity):
     """Collectible regular pacgum sprite with no animation."""
 
+    POINT_VALUE = 10
+
     def __init__(
         self,
         center_x: float,
