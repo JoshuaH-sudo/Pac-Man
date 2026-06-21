@@ -26,6 +26,6 @@ class Pacgum(Entity):
             center_x=center_x,
             center_y=center_y,
             scale=scale,
-            rows=1,
-            columns=1,
+            rows=2,
+            columns=2,
         )

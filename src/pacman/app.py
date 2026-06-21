@@ -14,10 +14,6 @@ from pacman.game import GameView
 from pacman.ui.main_menu import MainMenu
 
 USAGE = "Usage: python3 pac-man.py config.json"
-TEST_LOOP_MAZE: list[list[int]] = [
-    [9, 5, 5, 5, 5, 5, 5, 5, 5, 3],
-    [12, 5, 5, 5, 5, 5, 5, 5, 5, 6],
-]
 
 
 def _print_error(message: str) -> None:
@@ -53,7 +49,7 @@ def main(argv: list[str] | None = None) -> int:
         perfect=False,
     )
     generator.generate()
-    maze_grid = TEST_LOOP_MAZE  # generator.maze
+    maze_grid = generator.maze
 
     print(f"Maze dimensions: {len(maze_grid[0])}x{len(maze_grid)}")
     for row in maze_grid:
