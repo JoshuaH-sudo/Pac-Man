@@ -12,7 +12,6 @@ from pacman.core import (
     GHOST_CELL_FRACTION,
     GHOST_SPEED_RATIO,
     ITEM_CELL_FRACTION,
-    PACGUM_ANIMATION_FPS,
     PLAYER_CELL_FRACTION,
     PLAYER_MOVEMENT_SPEED,
     PLAYER_SPEED_RATIO,
@@ -21,8 +20,13 @@ from pacman.core import (
     direction_is_open,
     nearest_cell_index,
 )
-from pacman.entities import Ghost, Pacgum, Pacman
-from pacman.maze import MazeDisplay, build_corner_cells, build_item_cells
+from pacman.entities import Ghost, Pacgum, Pacman, SuperPacgum
+from pacman.maze import (
+    MazeDisplay,
+    build_corner_cells,
+    build_item_cells,
+    build_super_item_cells,
+)
 from pacman.input import MovementController
 
 if TYPE_CHECKING:
@@ -41,6 +45,7 @@ GHOST_SPRITE_SHEETS: tuple[str, ...] = (
 # Backward-compatible aliases for existing tests and imports.
 _build_item_cells = build_item_cells
 _build_corner_cells = build_corner_cells
+_build_super_item_cells = build_super_item_cells
 
 
 def _env_flag_is_enabled(name: str) -> bool:
@@ -64,6 +69,8 @@ class GameView(arcade.View):
         self._player_cell_x = center_cell_index(self._maze_display.cols)
         self._player_cell_y = center_cell_index(self._maze_display.rows)
         self._item_cells = _build_item_cells(self._maze_grid)
+        self._super_item_cells = _build_super_item_cells(self._maze_grid)
+        self._all_item_cells = self._item_cells + self._super_item_cells
         self._ghost_cells = _build_corner_cells(
             self._maze_display.cols,
             self._maze_display.rows,
@@ -84,14 +91,21 @@ class GameView(arcade.View):
         )
         self._physics_engine: arcade.PhysicsEngineSimple | None = None
 
-        self._items: arcade.SpriteList[Pacgum] = arcade.SpriteList()
+        self._items: arcade.SpriteList[arcade.Sprite] = arcade.SpriteList()
         for _ in self._item_cells:
             self._items.append(
                 Pacgum(
                     center_x=0.0,
                     center_y=0.0,
                     scale=1.0,
-                    animation_fps=PACGUM_ANIMATION_FPS,
+                )
+            )
+        for _ in self._super_item_cells:
+            self._items.append(
+                SuperPacgum(
+                    center_x=0.0,
+                    center_y=0.0,
+                    scale=1.0,
                 )
             )
 
@@ -301,7 +315,7 @@ class GameView(arcade.View):
         )
         self._movement.reset(choose_initial_direction(center_cell_value))
 
-        for item, (cell_x, cell_y) in zip(self._items, self._item_cells):
+        for item, (cell_x, cell_y) in zip(self._items, self._all_item_cells):
             item.scale = (cell_size * ITEM_CELL_FRACTION) / max(
                 1.0, float(item.texture.width)
             )
