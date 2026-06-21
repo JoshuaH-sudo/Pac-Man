@@ -66,7 +66,7 @@ def nearest_cell_center(
     return offset + (cell_index + 0.5) * cell_size
 
 
-def resolve_player_direction(
+def resolve_direction(
     current_direction: Direction,
     desired_direction: Direction,
     center_x: float,
@@ -81,9 +81,7 @@ def resolve_player_direction(
     pre_turn_pixels = max(1.0, round(3.0 * corner_scale))
     post_turn_pixels = max(1.0, round(4.0 * corner_scale))
     next_direction = (
-        current_direction
-        if current_direction != (0, 0)
-        else desired_direction
+        current_direction if current_direction != (0, 0) else desired_direction
     )
     snapped_x = center_x
     snapped_y = center_y

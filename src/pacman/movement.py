@@ -9,7 +9,7 @@ from pacman.utils import (
     coerce_blocked_directions,
     direction_is_open,
     nearest_cell_center,
-    resolve_player_direction,
+    resolve_direction,
 )
 
 
@@ -155,7 +155,7 @@ class MovementController:
             return self._current_direction, center_x, center_y, False
 
         # Resolve legal turns and axis alignment while preserving smooth motion.
-        self._current_direction, center_x, center_y = resolve_player_direction(
+        self._current_direction, center_x, center_y = resolve_direction(
             self._current_direction,
             self._desired_direction,
             player_center_x,

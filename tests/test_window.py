@@ -15,7 +15,7 @@ from pacman.utils import (
     direction_is_open,
     nearest_cell_center,
     nearest_cell_index,
-    resolve_player_direction,
+    resolve_direction,
 )
 
 
@@ -87,9 +87,9 @@ def test_nearest_cell_index_uses_closest_cell_not_floor() -> None:
     assert nearest_cell_index(51.0, offset=10.0, cell_size=20.0) == 2
 
 
-def test_resolve_player_direction_turns_when_aligned() -> None:
+def test_resolve_direction_turns_when_aligned() -> None:
     """A perpendicular turn should apply once the player is near lane center."""
-    direction, center_x, center_y = resolve_player_direction(
+    direction, center_x, center_y = resolve_direction(
         current_direction=(1, 0),
         desired_direction=(0, 1),
         center_x=60.0,
@@ -103,9 +103,9 @@ def test_resolve_player_direction_turns_when_aligned() -> None:
     assert center_y == 60.0
 
 
-def test_resolve_player_direction_resumes_from_stop() -> None:
+def test_resolve_direction_resumes_from_stop() -> None:
     """A stopped player should follow a valid desired direction immediately."""
-    direction, center_x, center_y = resolve_player_direction(
+    direction, center_x, center_y = resolve_direction(
         current_direction=(0, 0),
         desired_direction=(-1, 0),
         center_x=60.0,
