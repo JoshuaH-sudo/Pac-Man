@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Sequence
+from typing import TYPE_CHECKING, Sequence
 
 import arcade
 
@@ -24,6 +24,10 @@ from pacman.core import (
 from pacman.entities import Ghost, Pacgum, Pacman
 from pacman.maze import MazeDisplay, build_corner_cells, build_item_cells
 from pacman.input import MovementController
+
+if TYPE_CHECKING:
+    from pacman.core import GameConfig
+    from pacman.ui.main_menu import MainMenu
 
 LOGGER = logging.getLogger(__name__)
 GHOST_SPRITE_SHEETS: tuple[str, ...] = (
@@ -104,6 +108,8 @@ class GameView(arcade.View):
             )
 
         self._movement = MovementController(choose_initial_direction(center_cell_value))
+        self.config: GameConfig | None = None
+        self.main_menu: MainMenu | None = None
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
         if self._debug_enabled:
             logging.basicConfig(
@@ -205,6 +211,42 @@ class GameView(arcade.View):
         if self.window is not None:
             cell_value = self._current_cell_value()
         self._movement.queue_input(symbol, cell_value)
+
+        ##################################
+        # TESTING: Shortcut to pause and end screens
+        ##################################
+        if self.window is None:
+            return
+
+        if symbol == arcade.key.O and self.config is not None:
+            from pacman.ui.end_screen import EndScreen
+
+            self.window.show_view(
+                EndScreen(
+                    message="Game over!",
+                    color=arcade.color.WHITE,
+                    score=0,
+                    config=self.config,
+                    game=self,
+                )
+            )
+        if symbol == arcade.key.V and self.config is not None:
+            from pacman.ui.end_screen import EndScreen
+
+            self.window.show_view(
+                EndScreen(
+                    message="You won!",
+                    color=arcade.color.YELLOW,
+                    score=0,
+                    config=self.config,
+                    game=self,
+                )
+            )
+
+        if symbol == arcade.key.P and self.main_menu is not None:
+            from pacman.ui.pause_menu import PauseMenu
+
+            self.window.show_view(PauseMenu(game=self, main_menu=self.main_menu))
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
