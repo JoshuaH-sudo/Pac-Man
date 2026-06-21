@@ -165,37 +165,3 @@ class MovementController:
             offset_y,
         )
         return self._current_direction, center_x, center_y, False
-
-    def snap_to_lane(
-        self,
-        player_center_x: float,
-        player_center_y: float,
-        cell_size: float,
-        offset_x: float,
-        offset_y: float,
-        max_alignment_step: float | None = None,
-    ) -> tuple[float, float]:
-        """Snap perpendicular axis to nearest lane center."""
-        center_x = player_center_x
-        center_y = player_center_y
-        alignment_step = (
-            max(1.0, cell_size / 8.0)
-            if max_alignment_step is None
-            else max(0.0, max_alignment_step)
-        )
-
-        def _step_toward(value: float, target: float) -> float:
-            delta = target - value
-            if abs(delta) <= alignment_step:
-                return target
-            return value + alignment_step * (1 if delta > 0 else -1)
-
-        # Keep the non-travel axis centered so sprite movement stays visually
-        # locked to corridors despite floating-point drift.
-        if self._current_direction[0] != 0:
-            lane_y = nearest_cell_center(player_center_y, offset_y, cell_size)
-            center_y = _step_toward(player_center_y, lane_y)
-        elif self._current_direction[1] != 0:
-            lane_x = nearest_cell_center(player_center_x, offset_x, cell_size)
-            center_x = _step_toward(player_center_x, lane_x)
-        return center_x, center_y

@@ -101,6 +101,22 @@ def test_resolve_direction_turns_when_aligned() -> None:
     assert center_y == 60.0
 
 
+def test_resolve_direction_does_not_turn_too_early() -> None:
+    """Perpendicular turn should wait until the actor reaches corridor center."""
+    direction, center_x, center_y = resolve_direction(
+        current_direction=(1, 0),
+        desired_direction=(0, 1),
+        center_x=66.0,
+        center_y=60.0,
+        cell_size=20.0,
+        offset_x=10.0,
+        offset_y=10.0,
+    )
+    assert direction == (1, 0)
+    assert center_x == 66.0
+    assert center_y == 60.0
+
+
 def test_resolve_direction_resumes_from_stop() -> None:
     """A stopped player should follow a valid desired direction immediately."""
     direction, center_x, center_y = resolve_direction(
