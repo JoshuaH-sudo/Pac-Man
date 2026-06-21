@@ -3,10 +3,10 @@ import arcade.gui
 from arcade.gui.events import UIKeyPressEvent, UITextInputEvent
 from typing import Any, cast, Callable
 
-from pacman.config import GameConfig
-from pacman.highscore import HighScore, HighscoreEntry
+from pacman.core import GameConfig, WINDOW_WIDTH, WINDOW_HEIGHT
+from pacman.game import HighScore, HighscoreEntry
 from pacman.ui.main_menu import MainMenu
-from pacman.window import GameView, WINDOW_WIDTH, WINDOW_HEIGHT
+from pacman.game import GameView
 
 UISpace = cast(Any, arcade.gui.UISpace)
 

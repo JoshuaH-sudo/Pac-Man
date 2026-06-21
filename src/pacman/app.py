@@ -6,15 +6,18 @@ from pathlib import Path
 import sys
 
 import arcade
-
-from pacman.config import Parser
 from mazegenerator import MazeGenerator
 
-from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
+from pacman.core import Parser
+from pacman.core import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH
+from pacman.game import GameView
 from pacman.ui.main_menu import MainMenu
 
-
 USAGE = "Usage: python3 pac-man.py config.json"
+TEST_LOOP_MAZE: list[list[int]] = [
+    [9, 5, 5, 5, 5, 5, 5, 5, 5, 3],
+    [12, 5, 5, 5, 5, 5, 5, 5, 5, 6],
+]
 
 
 def _print_error(message: str) -> None:
@@ -44,28 +47,26 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Configured lives: {config.lives}")
     # print(f"Loaded highscores: {len(highscores)}")
 
-    # Create a simple 20x20 maze
-    maze_gen = MazeGenerator(size=(20, 20))
-
-    # Get the maze structure
-    maze_grid = maze_gen.maze
-    shortest_path = maze_gen.shortest_path
+    level_width, level_height = config.levels[0]
+    generator = MazeGenerator(
+        size=(level_width, level_height),
+        perfect=False,
+    )
+    generator.generate()
+    maze_grid = generator.maze
 
     print(f"Maze dimensions: {len(maze_grid[0])}x{len(maze_grid)}")
-    print(f"Entry: {maze_gen.maze_entry}, Exit: {maze_gen.maze_exit}")
     for row in maze_grid:
         # print hexadecimal values for better visualization
         print("".join(f"{cell:2X}" for cell in row))
-    print(f"Shortest path length: {shortest_path}")
 
     # Create a window class. This is what actually shows up on screen
     window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
 
     # Create and setup the GameView
-    game = GameView(maze_grid, config)
+    game = GameView(maze_grid)
     menu = MainMenu(game, config)
     menu.instruction.main_menu = menu
-    game.main_menu = menu
 
     # Show GameView on screen
     window.show_view(menu)

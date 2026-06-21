@@ -2,9 +2,9 @@ import arcade
 import arcade.gui
 from typing import Any, cast
 
-from pacman.config import GameConfig
-from pacman.highscore import HighScore
-from pacman.window import GameView
+from pacman.game import GameView
+from pacman.core import GameConfig
+from pacman.game import HighScore
 
 UISpace = cast(Any, arcade.gui.UISpace)
 
@@ -20,15 +20,18 @@ class InstructionView(arcade.View):
         # Box layout for buttons and texts
         box = arcade.gui.UIBoxLayout(vertical=True, space_between=20)
         # Title
-        box.add(arcade.gui.UILabel(
-            text="Instructions",
-            font_size=40,
-            bold=True,
-        ))
+        box.add(
+            arcade.gui.UILabel(
+                text="Instructions",
+                font_size=40,
+                bold=True,
+            )
+        )
 
         # Instruction texts
-        instructions_box = arcade.gui.UIBoxLayout(vertical=True, space_between=4,
-                                                  align="left")
+        instructions_box = arcade.gui.UIBoxLayout(
+            vertical=True, space_between=4, align="left"
+        )
         for line in [
             "Use arrow keys or WASD to move Pac-Man.",
             "Eat all pacgums within the time limit to complete the level.",
@@ -36,10 +39,12 @@ class InstructionView(arcade.View):
             "Avoid ghosts — you lose a life when touched by a ghost.",
             "Game over when all lives are lost.",
         ]:
-            instructions_box.add(arcade.gui.UILabel(
-                text=line,
-                font_size=18,
-            ))
+            instructions_box.add(
+                arcade.gui.UILabel(
+                    text=line,
+                    font_size=18,
+                )
+            )
         box.add(instructions_box)
 
         # Spacer between text and buttons
@@ -109,12 +114,11 @@ class MainMenu(arcade.View):
         # Outer Box
         outer_box = arcade.gui.UIBoxLayout(vertical=True, space_between=20)
         # Title
-        outer_box.add(arcade.gui.UILabel(
-            text="Pac-Man",
-            font_size=40,
-            bold=True,
-            text_color=arcade.color.YELLOW
-        ))
+        outer_box.add(
+            arcade.gui.UILabel(
+                text="Pac-Man", font_size=40, bold=True, text_color=arcade.color.YELLOW
+            )
+        )
 
         # Buttons
         button_box = arcade.gui.UIBoxLayout(vertical=True, space_between=10)

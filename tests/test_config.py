@@ -3,7 +3,7 @@
 from pathlib import Path
 import pytest
 
-from pacman.config import Parser
+from pacman.core import Parser
 
 
 def test_load_config_supports_comments(tmp_path: Path) -> None:

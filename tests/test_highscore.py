@@ -2,7 +2,7 @@
 
 from pathlib import Path
 
-from pacman.highscore import (
+from pacman.game import (
     HighscoreEntry,
     HighScore
 )

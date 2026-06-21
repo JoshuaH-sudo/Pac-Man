@@ -3,7 +3,7 @@ import arcade.gui
 from typing import Any, cast
 
 from pacman.ui.main_menu import MainMenu
-from pacman.window import GameView
+from pacman.game import GameView
 
 UISpace = cast(Any, arcade.gui.UISpace)
 
