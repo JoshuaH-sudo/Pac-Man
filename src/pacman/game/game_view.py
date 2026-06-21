@@ -73,12 +73,14 @@ class GameView(arcade.View):
             speed=PLAYER_MOVEMENT_SPEED,
             scale=1.0,
         )
-        self._players: arcade.SpriteList = arcade.SpriteList()
+        self._players: arcade.SpriteList[Pacman] = arcade.SpriteList()
         self._players.append(self._player)
-        self._walls: arcade.SpriteList = arcade.SpriteList(use_spatial_hash=True)
+        self._walls: arcade.SpriteList[arcade.SpriteSolidColor] = (
+            arcade.SpriteList(use_spatial_hash=True)
+        )
         self._physics_engine: arcade.PhysicsEngineSimple | None = None
 
-        self._items: arcade.SpriteList = arcade.SpriteList()
+        self._items: arcade.SpriteList[Pacgum] = arcade.SpriteList()
         for _ in self._item_cells:
             self._items.append(
                 Pacgum(
@@ -89,7 +91,7 @@ class GameView(arcade.View):
                 )
             )
 
-        self._ghosts: arcade.SpriteList = arcade.SpriteList()
+        self._ghosts: arcade.SpriteList[Ghost] = arcade.SpriteList()
         for ghost_sheet in GHOST_SPRITE_SHEETS:
             self._ghosts.append(
                 Ghost(
@@ -355,7 +357,9 @@ class GameView(arcade.View):
         if self.window is None:
             return
 
-        walls: arcade.SpriteList = arcade.SpriteList(use_spatial_hash=True)
+        walls: arcade.SpriteList[arcade.SpriteSolidColor] = (
+            arcade.SpriteList(use_spatial_hash=True)
+        )
         for center_x, center_y, width, height in self._maze_display.wall_colliders(
             self.window.width,
             self.window.height,
