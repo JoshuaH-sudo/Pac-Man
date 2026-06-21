@@ -8,7 +8,7 @@ import sys
 import arcade
 
 from pacman.config import Parser
-from mazegenerator import MazeGenerator
+from pacman.constants import CLOSED_EAST, CLOSED_NORTH, CLOSED_SOUTH, CLOSED_WEST
 
 from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
 from pacman.ui.main_menu import MainMenu
@@ -20,6 +20,38 @@ MAZE_SIZE = (10, 10)
 def _print_error(message: str) -> None:
     """Print a user-friendly error message."""
     print(f"Error: {message}", file=sys.stderr)
+
+
+def _build_test_loop_maze() -> list[list[int]]:
+    """Build a 2x10 rectangular loop with a shared middle wall segment."""
+    rows = 2
+    cols = 10
+    maze: list[list[int]] = []
+
+    for row in range(rows):
+        row_values: list[int] = []
+        for col in range(cols):
+            cell_value = 0
+            if row == 0:
+                cell_value |= CLOSED_NORTH
+            if row == rows - 1:
+                cell_value |= CLOSED_SOUTH
+            if col == 0:
+                cell_value |= CLOSED_WEST
+            if col == cols - 1:
+                cell_value |= CLOSED_EAST
+
+            # Add the middle shared wall except on both ends, so the two rows
+            # connect only at left and right edges and form one loop.
+            if row == 0 and 0 < col < cols - 1:
+                cell_value |= CLOSED_SOUTH
+            if row == 1 and 0 < col < cols - 1:
+                cell_value |= CLOSED_NORTH
+
+            row_values.append(cell_value)
+        maze.append(row_values)
+
+    return maze
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -44,19 +76,14 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Configured lives: {config.lives}")
     # print(f"Loaded highscores: {len(highscores)}")
 
-    # Use an odd-sized maze so the layout has a true center cell.
-    maze_gen = MazeGenerator(size=MAZE_SIZE)
-
-    # Get the maze structure
-    maze_grid = maze_gen.maze
-    shortest_path = maze_gen.shortest_path
+    # Deterministic test maze: 2x10 rectangle with a shared middle wall and
+    # openings at both ends, creating a single loop track.
+    maze_grid = _build_test_loop_maze()
 
     print(f"Maze dimensions: {len(maze_grid[0])}x{len(maze_grid)}")
-    print(f"Entry: {maze_gen.maze_entry}, Exit: {maze_gen.maze_exit}")
     for row in maze_grid:
         # print hexadecimal values for better visualization
         print("".join(f"{cell:2X}" for cell in row))
-    print(f"Shortest path length: {shortest_path}")
 
     # Create a window class. This is what actually shows up on screen
     window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)

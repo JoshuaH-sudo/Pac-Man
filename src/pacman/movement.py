@@ -126,7 +126,18 @@ class MovementController:
                 return self._current_direction, approach_x, approach_y, False
 
             self._current_direction = (0, 0)
-            self._desired_direction = (0, 0)
+            if (
+                self._desired_direction != (0, 0)
+                and direction_is_open(cell_value, self._desired_direction)
+            ):
+                # At corner centers, immediately apply a valid queued turn
+                # instead of clearing it and getting stuck.
+                self._current_direction = self._desired_direction
+            elif (
+                self._desired_direction != (0, 0)
+                and not direction_is_open(cell_value, self._desired_direction)
+            ):
+                self._desired_direction = (0, 0)
             return self._current_direction, stop_x, stop_y, False
 
         previous_direction = self._current_direction

@@ -26,6 +26,11 @@ class Pacgum(Entity):
             center_y=center_y,
             scale=scale,
         )
+        self.define_animation(
+            "pulse",
+            [(0, 0), (0, 1), (1, 0), (1, 1)],
+        )
+        self.set_animation("pulse", reset=True)
         self._animation_interval = 1.0 / max(0.1, animation_fps)
         self._animation_elapsed = 0.0
 

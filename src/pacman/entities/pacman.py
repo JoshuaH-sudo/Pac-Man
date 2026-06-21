@@ -25,8 +25,13 @@ class Pacman(Entity):
             center_x=center_x,
             center_y=center_y,
             scale=scale,
+            rows=3,
+            columns=1,
         )
         self._speed = speed
+        self.define_animation("idle", [(0, 0)])
+        self.define_animation("normal", [(0, 0), (1, 0), (2, 0)])
+        self.set_animation("idle", reset=True)
 
     def move(self, horizontal: int, vertical: int) -> None:
         """Set intended movement direction for the current update loop."""
@@ -40,7 +45,8 @@ class Pacman(Entity):
     def update_animation(self, delta_time: float = 1 / 60) -> None:
         del delta_time
         if self.change_x == 0 and self.change_y == 0:
-            self.texture = self._textures[0]
+            self.set_animation("idle", reset=True)
             return
 
+        self.set_animation("normal")
         self._advance_frame()

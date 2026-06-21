@@ -73,7 +73,35 @@ class Ghost(Entity):
             and abs(self.center_y - center_y) <= alignment_tolerance
         )
 
-        desired_direction = self._direction
+        if (
+            self._direction != (0, 0)
+            and not direction_is_open(cell_value, self._direction)
+            and not aligned_to_center
+        ):
+            # When entering a corner cell, keep moving to its center before
+            # changing heading; stopping early causes corner lockups.
+            distance_to_center = 0.0
+            if self._direction[0] != 0:
+                distance_to_center = (center_x - self.center_x) * self._direction[0]
+            elif self._direction[1] != 0:
+                distance_to_center = (center_y - self.center_y) * self._direction[1]
+
+            if distance_to_center > alignment_tolerance:
+                self.move(self._direction[0], self._direction[1])
+                self.snap_to_lane(
+                    direction=self._direction,
+                    cell_size=cell_size,
+                    offset_x=offset_x,
+                    offset_y=offset_y,
+                    max_alignment_step=max(abs(self.change_x), abs(self.change_y)),
+                )
+                return
+
+            self.center_x = center_x
+            self.center_y = center_y
+            aligned_to_center = True
+
+        next_direction = self._direction
         if aligned_to_center:
             self.center_x = center_x
             self.center_y = center_y
@@ -89,20 +117,18 @@ class Ghost(Entity):
                 else open_directions
             )
             if self._direction in candidate_directions and random.random() < 0.65:
-                desired_direction = self._direction
+                next_direction = self._direction
             else:
-                desired_direction = random.choice(candidate_directions)
-        elif self._direction not in open_directions:
-            desired_direction = random.choice(open_directions)
+                next_direction = random.choice(candidate_directions)
+        else:
+            # Between centers, keep heading unchanged to avoid diagonal corner cuts.
+            if self._direction not in open_directions:
+                next_direction = (0, 0)
 
-        next_direction = self.resolve_corner_turn(
-            current_direction=self._direction,
-            desired_direction=desired_direction,
-            cell_size=cell_size,
-            offset_x=offset_x,
-            offset_y=offset_y,
-        )
-        if not direction_is_open(cell_value, next_direction):
+        if (
+            next_direction != (0, 0)
+            and not direction_is_open(cell_value, next_direction)
+        ):
             next_direction = (0, 0)
 
         self._direction = next_direction
