@@ -22,12 +22,37 @@ def build_item_cells(
     """Return Pacgum cells excluding maze corners and fully closed cells."""
     rows = len(maze_grid)
     cols = len(maze_grid[0])
+    super_cells = {
+        (int(cell_x), int(cell_y))
+        for cell_x, cell_y in build_super_item_cells(maze_grid)
+    }
     return tuple(
         (float(cell_x), float(cell_y))
         for cell_y, row in enumerate(maze_grid)
         for cell_x, cell_value in enumerate(row)
         if not _is_corner_cell(cell_x, cell_y, cols, rows)
+        and (cell_x, cell_y) not in super_cells
         and (int(cell_value) & FULLY_CLOSED_CELL_MASK) != FULLY_CLOSED_CELL_MASK
+    )
+
+
+def build_super_item_cells(
+    maze_grid: Sequence[Sequence[int]],
+) -> tuple[tuple[float, float], ...]:
+    """Return four near-corner cells for super pacgums in deterministic order."""
+    rows = len(maze_grid)
+    cols = len(maze_grid[0])
+    max_x = max(0, cols - 1)
+    max_y = max(0, rows - 1)
+    near_left = min(1, max_x)
+    near_right = max(0, max_x - 1)
+    near_top = min(1, max_y)
+    near_bottom = max(0, max_y - 1)
+    return (
+        (float(near_left), float(near_top)),
+        (float(near_right), float(near_top)),
+        (float(near_left), float(near_bottom)),
+        (float(near_right), float(near_bottom)),
     )
 
 

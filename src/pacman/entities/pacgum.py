@@ -11,33 +11,21 @@ ITEM_SHEET_PATH = ASSETS_DIR / "pacgum.png"
 
 
 class Pacgum(Entity):
-    """Collectible pacgum sprite that loops through a 2x2 animation."""
+    """Collectible regular pacgum sprite with no animation."""
+
+    POINT_VALUE = 10
 
     def __init__(
         self,
         center_x: float,
         center_y: float,
         scale: float = 1.0,
-        animation_fps: float = 8.0,
     ) -> None:
         super().__init__(
             sprite_sheet_path=ITEM_SHEET_PATH,
             center_x=center_x,
             center_y=center_y,
             scale=scale,
+            rows=2,
+            columns=2,
         )
-        self.define_animation(
-            "pulse",
-            [(0, 0), (0, 1), (1, 0), (1, 1)],
-        )
-        self.set_animation("pulse", reset=True)
-        self._animation_interval = 1.0 / max(0.1, animation_fps)
-        self._animation_elapsed = 0.0
-
-    def update_animation(self, delta_time: float = 1 / 60) -> None:
-        self._animation_elapsed += delta_time
-        if self._animation_elapsed < self._animation_interval:
-            return
-
-        self._animation_elapsed %= self._animation_interval
-        self._advance_frame()

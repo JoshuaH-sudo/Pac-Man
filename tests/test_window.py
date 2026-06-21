@@ -13,7 +13,12 @@ from pacman.core import (
     nearest_cell_index,
     resolve_direction,
 )
-from pacman.maze import MazeDisplay, build_corner_cells, build_item_cells
+from pacman.maze import (
+    MazeDisplay,
+    build_corner_cells,
+    build_item_cells,
+    build_super_item_cells,
+)
 from pacman.input import MovementController
 
 
@@ -189,4 +194,15 @@ def test_build_corner_cells_returns_all_four_corners() -> None:
         (3.0, 0.0),
         (0.0, 2.0),
         (3.0, 2.0),
+    )
+
+
+def test_build_super_item_cells_places_four_near_corner_items() -> None:
+    """Super pacgums should spawn near each corner in fixed order."""
+    maze_grid = [[0] * 10 for _ in range(10)]
+    assert build_super_item_cells(maze_grid) == (
+        (1.0, 1.0),
+        (8.0, 1.0),
+        (1.0, 8.0),
+        (8.0, 8.0),
     )

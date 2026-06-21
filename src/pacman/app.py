@@ -14,10 +14,6 @@ from pacman.game import GameView
 from pacman.ui.main_menu import MainMenu
 
 USAGE = "Usage: python3 pac-man.py config.json"
-TEST_LOOP_MAZE: list[list[int]] = [
-    [9, 5, 5, 5, 5, 5, 5, 5, 5, 3],
-    [12, 5, 5, 5, 5, 5, 5, 5, 5, 6],
-]
 
 
 def _print_error(message: str) -> None:
