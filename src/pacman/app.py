@@ -53,7 +53,7 @@ def main(argv: list[str] | None = None) -> int:
         perfect=False,
     )
     generator.generate()
-    maze_grid = generator.maze
+    maze_grid = TEST_LOOP_MAZE  # generator.maze
 
     print(f"Maze dimensions: {len(maze_grid[0])}x{len(maze_grid)}")
     for row in maze_grid:
