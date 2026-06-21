@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from pacman.constants import (
+from pacman.core.constants import (
     CLOSED_EAST,
     CLOSED_NORTH,
     CLOSED_SOUTH,
     CLOSED_WEST,
 )
-from pacman.types import Direction, GridPoint, WallSegment
+from pacman.core.types import Direction, GridPoint, WallSegment
 
 
 def normalize_segment(start: GridPoint, end: GridPoint) -> WallSegment:

@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from pacman.types import Direction
-from pacman.utils import nearest_cell_center, resolve_direction
+from pacman.core import Direction, nearest_cell_center, resolve_direction
 
 
 class EntityMazeMovement:

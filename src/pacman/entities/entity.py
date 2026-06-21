@@ -8,7 +8,7 @@ import arcade
 
 from pacman.entities.animation import SpriteAnimation
 from pacman.entities.maze_movement import EntityMazeMovement
-from pacman.types import Direction
+from pacman.core import Direction
 
 
 class Entity(arcade.Sprite):

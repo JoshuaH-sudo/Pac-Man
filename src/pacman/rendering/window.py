@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import arcade
 
-from pacman.constants import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH
-from pacman.game_view import GameView
+from pacman.core import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH
+from pacman.game import GameView
 
 
 def create_game_window(

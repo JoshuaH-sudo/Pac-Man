@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Sequence
 
-from pacman.constants import CLOSED_EAST, CLOSED_NORTH, CLOSED_SOUTH, CLOSED_WEST
+from pacman.core import CLOSED_EAST, CLOSED_NORTH, CLOSED_SOUTH, CLOSED_WEST
 
 FULLY_CLOSED_CELL_MASK = CLOSED_NORTH | CLOSED_EAST | CLOSED_SOUTH | CLOSED_WEST
 

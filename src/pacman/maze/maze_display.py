@@ -8,7 +8,7 @@ from typing import Sequence
 import arcade
 from arcade.types import Color
 
-from pacman.constants import (
+from pacman.core import (
     CLOSED_EAST,
     CLOSED_NORTH,
     CLOSED_SOUTH,
@@ -16,9 +16,11 @@ from pacman.constants import (
     COLLISION_WALL_THICKNESS_RATIO,
     MAZE_MARGIN,
     MAX_COLLISION_WALL_THICKNESS,
+    GridPoint,
+    WallCollider,
+    WallSegment,
+    normalize_segment,
 )
-from pacman.types import GridPoint, WallCollider, WallSegment
-from pacman.utils import normalize_segment
 
 
 @dataclass(frozen=True)

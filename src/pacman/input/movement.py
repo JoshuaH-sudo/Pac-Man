@@ -4,8 +4,8 @@ from __future__ import annotations
 
 import arcade
 
-from pacman.types import Direction
-from pacman.utils import (
+from pacman.core import Direction
+from pacman.core import (
     coerce_blocked_directions,
     direction_is_open,
     nearest_cell_center,

@@ -8,7 +8,7 @@ from typing import Sequence
 
 import arcade
 
-from pacman.constants import (
+from pacman.core import (
     GHOST_CELL_FRACTION,
     GHOST_SPEED_RATIO,
     ITEM_CELL_FRACTION,
@@ -16,17 +16,14 @@ from pacman.constants import (
     PLAYER_CELL_FRACTION,
     PLAYER_MOVEMENT_SPEED,
     PLAYER_SPEED_RATIO,
-)
-from pacman.entities import Ghost, Pacgum, Pacman
-from pacman.maze_display import MazeDisplay
-from pacman.movement import MovementController
-from pacman.spawn_layout import build_corner_cells, build_item_cells
-from pacman.utils import (
     center_cell_index,
     choose_initial_direction,
     direction_is_open,
     nearest_cell_index,
 )
+from pacman.entities import Ghost, Pacgum, Pacman
+from pacman.maze import MazeDisplay, build_corner_cells, build_item_cells
+from pacman.input import MovementController
 
 LOGGER = logging.getLogger(__name__)
 GHOST_SPRITE_SHEETS: tuple[str, ...] = (

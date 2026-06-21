@@ -2,9 +2,9 @@ import arcade
 import arcade.gui
 from typing import Any, cast
 
-from pacman.window import GameView
-from pacman.config import GameConfig
-from pacman.highscore import HighScore
+from pacman.game import GameView
+from pacman.core import GameConfig
+from pacman.game import HighScore
 
 UISpace = cast(Any, arcade.gui.UISpace)
 

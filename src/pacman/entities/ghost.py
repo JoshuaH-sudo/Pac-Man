@@ -6,8 +6,7 @@ from pathlib import Path
 import random
 
 from pacman.entities.entity import Entity
-from pacman.types import Direction
-from pacman.utils import choose_initial_direction, direction_is_open
+from pacman.core import Direction, choose_initial_direction, direction_is_open
 
 ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets" / "sprites"
 

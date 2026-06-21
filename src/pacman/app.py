@@ -7,10 +7,9 @@ import sys
 
 import arcade
 
-from pacman.config import Parser
-from pacman.constants import CLOSED_EAST, CLOSED_NORTH, CLOSED_SOUTH, CLOSED_WEST
-
-from pacman.window import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH, GameView
+from pacman.core import Parser, CLOSED_EAST, CLOSED_NORTH, CLOSED_SOUTH, CLOSED_WEST
+from pacman.core import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH
+from pacman.game import GameView
 from pacman.ui.main_menu import MainMenu
 
 USAGE = "Usage: python3 pac-man.py config.json"
