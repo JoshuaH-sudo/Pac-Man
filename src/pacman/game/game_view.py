@@ -182,13 +182,14 @@ class GameView(arcade.View):
         self._update_ghosts()
         self._ghosts.update()
 
-        self._player.center_x, self._player.center_y = self._movement.snap_to_lane(
-            self._player.center_x,
-            self._player.center_y,
-            cell_size,
-            offset_x,
-            offset_y,
-            max(abs(self._player.change_x), abs(self._player.change_y)),
+        self._player.snap_to_lane(
+            direction=direction,
+            cell_size=cell_size,
+            offset_x=offset_x,
+            offset_y=offset_y,
+            max_alignment_step=max(
+                abs(self._player.change_x), abs(self._player.change_y)
+            ),
         )
         if self._debug_enabled:
             current_direction, desired_direction, queued_direction, spawn_lock = (

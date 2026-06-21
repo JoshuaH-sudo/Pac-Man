@@ -76,10 +76,10 @@ def resolve_direction(
     offset_y: float,
 ) -> tuple[Direction, float, float]:
     """Keep travel axis-aligned and snap turns onto the cell grid."""
-    alignment_tolerance = max(1.0, cell_size * 0.25)
-    corner_scale = max(1.0, cell_size / 8.0)
-    pre_turn_pixels = max(1.0, round(3.0 * corner_scale))
-    post_turn_pixels = max(1.0, round(4.0 * corner_scale))
+    alignment_tolerance = max(1.0, cell_size * 0.2)
+    # Keep turn activation close to junction centers so we do not rotate into
+    # corner colliders before reaching the corridor opening.
+    turn_window_pixels = max(1.0, cell_size * 0.1)
     next_direction = (
         current_direction if current_direction != (0, 0) else desired_direction
     )
@@ -93,7 +93,7 @@ def resolve_direction(
             if desired_direction[1] != 0:
                 turn_x = nearest_cell_center(center_x, offset_x, cell_size)
                 turn_offset_x = center_x - turn_x
-                if -pre_turn_pixels <= turn_offset_x <= post_turn_pixels:
+                if -turn_window_pixels <= turn_offset_x <= turn_window_pixels:
                     next_direction = desired_direction
             elif desired_direction[0] != 0:
                 next_direction = desired_direction
@@ -105,7 +105,7 @@ def resolve_direction(
             if desired_direction[0] != 0:
                 turn_y = nearest_cell_center(center_y, offset_y, cell_size)
                 turn_offset_y = center_y - turn_y
-                if -pre_turn_pixels <= turn_offset_y <= post_turn_pixels:
+                if -turn_window_pixels <= turn_offset_y <= turn_window_pixels:
                     next_direction = desired_direction
             elif desired_direction[1] != 0:
                 next_direction = desired_direction
