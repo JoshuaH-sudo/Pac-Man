@@ -63,7 +63,7 @@ def _env_flag_is_enabled(name: str) -> bool:
 class GameView(arcade.View):
     """Main game view that renders maze, entities, and update loop."""
 
-    def __init__(self, maze_grid: Sequence[Sequence[int]]):
+    def __init__(self, maze_grid: Sequence[Sequence[int]], config: GameConfig):
         super().__init__()
         self._maze_grid = tuple(tuple(int(cell) for cell in row) for row in maze_grid)
         self._maze_display = MazeDisplay(maze_grid)
@@ -123,8 +123,9 @@ class GameView(arcade.View):
             )
 
         self._movement = MovementController(choose_initial_direction(center_cell_value))
-        self.state = GameState()
-        self.config: GameConfig | None = None
+        self.config = config
+        if self.config:
+            self.state = GameState(self.config)
         self.main_menu: MainMenu | None = None
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
         if self._debug_enabled:
@@ -148,6 +149,14 @@ class GameView(arcade.View):
         self._items.draw()
         self._players.draw()
         self._ghosts.draw()
+        arcade.Text(f"Timer: {self.state.timer}", 12, 12,
+                    font_size=14, align="center").draw()
+        arcade.Text(f"Score: {self.state.score}", 12, 36,
+                    font_size=14, align="center").draw()
+        arcade.Text(f"Lives: {self.state.lives}", 12, 60,
+                    font_size=14, align="center").draw()
+        arcade.Text(f"Level: {self.state.level}", 12, 84,
+                    font_size=14, align="center").draw()
 
     def on_update(self, delta_time: float) -> None:
         if self.window is None:
