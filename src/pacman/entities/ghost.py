@@ -53,7 +53,8 @@ class Ghost(Entity):
     def set_vulnerable(self, is_vulnerable: bool) -> None:
         """Switch between idle and vulnerability ghost sprite rows.
 
-        This only affects visuals; movement logic is unchanged.
+        Vulnerability also changes target logic: ghosts flee from the player's
+        tile instead of moving toward it at intersections.
         """
         if self._is_vulnerable == is_vulnerable:
             return
@@ -125,6 +126,51 @@ class Ghost(Entity):
                 maze_grid=maze_grid,
             )
             if distance < best_distance:
+                best_distance = distance
+                best_direction = direction
+
+        return best_direction
+
+    def _farthest_direction_from_target(
+        self,
+        current_cell_x: int,
+        current_cell_y: int,
+        target_cell_x: int,
+        target_cell_y: int,
+        open_directions: list[Direction],
+        maze_grid: Sequence[Sequence[int]] | None = None,
+    ) -> Direction:
+        """Choose legal direction whose next tile is farthest from target.
+
+        Reversing direction is excluded unless it is the only legal option.
+        Distance scoring matches chase mode (BFS path distance fallback).
+        """
+        reverse_direction = (-self._direction[0], -self._direction[1])
+        candidate_directions = [
+            direction
+            for direction in open_directions
+            if direction != reverse_direction
+        ]
+        if not candidate_directions:
+            candidate_directions = open_directions
+
+        best_direction = candidate_directions[0]
+        best_distance = self._direction_distance_to_target(
+            next_cell_x=current_cell_x + best_direction[0],
+            next_cell_y=current_cell_y - best_direction[1],
+            target_cell_x=target_cell_x,
+            target_cell_y=target_cell_y,
+            maze_grid=maze_grid,
+        )
+        for direction in candidate_directions[1:]:
+            distance = self._direction_distance_to_target(
+                next_cell_x=current_cell_x + direction[0],
+                next_cell_y=current_cell_y - direction[1],
+                target_cell_x=target_cell_x,
+                target_cell_y=target_cell_y,
+                maze_grid=maze_grid,
+            )
+            if distance > best_distance:
                 best_distance = distance
                 best_direction = direction
 
@@ -340,14 +386,25 @@ class Ghost(Entity):
         mechanic. Otherwise, it falls back to roaming movement so the ghost can
         still move in contexts where tile coordinates are unavailable.
         """
-        # Classic rule: at intersections, pick the legal move that gets closest
-        # to the target tile, excluding reverse unless forced.
+        # Classic intersection rule with vulnerability extension:
+        # - normal: choose move that gets closest to target tile
+        # - vulnerable: choose move that gets farthest from target tile
+        # In both modes, reverse is excluded unless forced.
         if (
             ghost_cell_x is not None
             and ghost_cell_y is not None
             and target_cell_x is not None
             and target_cell_y is not None
         ):
+            if self._is_vulnerable:
+                return self._farthest_direction_from_target(
+                    current_cell_x=ghost_cell_x,
+                    current_cell_y=ghost_cell_y,
+                    target_cell_x=target_cell_x,
+                    target_cell_y=target_cell_y,
+                    open_directions=open_directions,
+                    maze_grid=maze_grid,
+                )
             return self._closest_direction_to_target(
                 current_cell_x=ghost_cell_x,
                 current_cell_y=ghost_cell_y,
