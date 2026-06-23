@@ -359,6 +359,8 @@ class GameView(arcade.View):
             self.window.width,
             self.window.height,
         )
+        player_cell_x, player_cell_y = self._current_cell_indices()
+
         for ghost in self._ghosts:
             cell_x, cell_y = self._cell_indices_for_position(
                 ghost.center_x,
@@ -379,6 +381,11 @@ class GameView(arcade.View):
                 cell_size=cell_size,
                 offset_x=offset_x,
                 offset_y=offset_y,
+                maze_grid=self._maze_grid,
+                ghost_cell_x=cell_x,
+                ghost_cell_y=cell_y,
+                target_cell_x=player_cell_x,
+                target_cell_y=player_cell_y,
             )
 
     def _collect_item_collisions(self) -> None:
