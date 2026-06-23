@@ -17,7 +17,7 @@ class GameState:
         self.score: int = 0
         self.pacgums_eaten: int = 0
         self.super_pacgums_eaten: int = 0
-        self.timer: int = 0
+        self.timer: float = config.level_max_time
 
     def add_pacgum(self, points: int) -> None:
         """Increment score and regular pacgum counter."""

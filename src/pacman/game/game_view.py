@@ -149,7 +149,7 @@ class GameView(arcade.View):
         self._items.draw()
         self._players.draw()
         self._ghosts.draw()
-        arcade.Text(f"Timer: {self.state.timer}", 12, 12,
+        arcade.Text(f"Timer: {int(self.state.timer)}", 12, 12,
                     font_size=14, align="center").draw()
         arcade.Text(f"Score: {self.state.score}", 12, 36,
                     font_size=14, align="center").draw()
@@ -231,6 +231,8 @@ class GameView(arcade.View):
         self._players.update_animation(delta_time=delta_time)
         self._items.update_animation(delta_time=delta_time)
         self._keep_player_on_screen()
+
+        self.state.timer -= delta_time
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         del modifiers
