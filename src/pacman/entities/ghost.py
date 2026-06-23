@@ -14,7 +14,17 @@ ASSETS_DIR = Path(__file__).resolve().parents[2] / "assets" / "sprites"
 
 
 class Ghost(Entity):
-    """Simple ghost sprite with configurable sheet and movement speed."""
+    """Ghost entity with lane-aligned movement and target-tile decisions.
+
+    Movement is intentionally split into small steps:
+    1. Detect open exits in the current maze cell.
+    2. Keep moving to cell center when needed to avoid corner jitter.
+    3. At a center/intersection, pick the next direction.
+    4. Apply velocity and snap to lane to stay corridor-aligned.
+
+    Direction tuples use world-space signs: (0, 1) means visually "up".
+    Maze rows increase downward, so moving up maps to row - 1.
+    """
 
     def __init__(
         self,
@@ -41,7 +51,10 @@ class Ghost(Entity):
         self._is_vulnerable = False
 
     def set_vulnerable(self, is_vulnerable: bool) -> None:
-        """Switch between idle and vulnerability ghost sprite rows."""
+        """Switch between idle and vulnerability ghost sprite rows.
+
+        This only affects visuals; movement logic is unchanged.
+        """
         if self._is_vulnerable == is_vulnerable:
             return
 
@@ -80,7 +93,12 @@ class Ghost(Entity):
         open_directions: list[Direction],
         maze_grid: Sequence[Sequence[int]] | None = None,
     ) -> Direction:
-        """Choose legal direction whose next tile is closest to the target."""
+        """Choose legal direction whose next tile is closest to target.
+
+        Reversing direction is excluded unless it is the only legal option.
+        For each candidate, we score the resulting next tile by path distance
+        (BFS) when a maze grid is available, otherwise by Manhattan distance.
+        """
         reverse_direction = (-self._direction[0], -self._direction[1])
         candidate_directions = [
             direction
@@ -120,7 +138,12 @@ class Ghost(Entity):
         target_cell_y: int,
         maze_grid: Sequence[Sequence[int]] | None,
     ) -> int:
-        """Return path distance to target from a candidate next cell."""
+        """Score a candidate next cell by distance to the target tile.
+
+        Path distance is preferred because Manhattan distance can be misleading
+        in mazes with walls. If no path can be found (or no grid is provided),
+        Manhattan distance is used as a deterministic fallback.
+        """
         if maze_grid is None:
             return Ghost._manhattan_distance(
                 next_cell_x,
@@ -154,7 +177,11 @@ class Ghost(Entity):
         target_cell_y: int,
         maze_grid: Sequence[Sequence[int]],
     ) -> int | None:
-        """Return BFS shortest path distance between two maze cells."""
+        """Return BFS shortest path distance between two maze cells.
+
+        Returns `None` when either coordinate is out of bounds or when no path
+        is reachable through open cell exits.
+        """
         if start_cell_x == target_cell_x and start_cell_y == target_cell_y:
             return 0
 
@@ -208,7 +235,10 @@ class Ghost(Entity):
 
     @staticmethod
     def _open_directions(cell_value: int) -> list[Direction]:
-        """Return every direction that is open from the current maze cell."""
+        """Return every direction that is open from the current maze cell.
+
+        The bitmask in `cell_value` encodes which edges are blocked.
+        """
         return [
             direction
             for direction in ((0, 1), (1, 0), (0, -1), (-1, 0))
@@ -217,7 +247,11 @@ class Ghost(Entity):
 
     @staticmethod
     def _alignment_tolerance(cell_size: float) -> float:
-        """Return tolerance used to treat the ghost as center-aligned."""
+        """Return tolerance used to treat the ghost as center-aligned.
+
+        A small tolerance helps avoid floating-point noise causing indecision
+        right around tile centers.
+        """
         return max(0.5, cell_size * 0.03)
 
     def _is_aligned_to_center(
@@ -226,7 +260,7 @@ class Ghost(Entity):
         center_y: float,
         tolerance: float,
     ) -> bool:
-        """Return True when ghost is close enough to cell center."""
+        """Return True when ghost is close enough to tile center."""
         return (
             abs(self.center_x - center_x) <= tolerance
             and abs(self.center_y - center_y) <= tolerance
@@ -237,7 +271,11 @@ class Ghost(Entity):
         center_x: float,
         center_y: float,
     ) -> float:
-        """Project remaining distance to center onto the current heading axis."""
+        """Project remaining distance to center onto current heading axis.
+
+        Positive output means continuing in the current direction moves toward
+        center; negative means the center is already behind the ghost.
+        """
         if self._direction[0] != 0:
             return (center_x - self.center_x) * self._direction[0]
         if self._direction[1] != 0:
@@ -255,7 +293,13 @@ class Ghost(Entity):
         aligned_to_center: bool,
         alignment_tolerance: float,
     ) -> bool:
-        """Keep moving to center when current heading just became blocked."""
+        """Keep moving to center when heading just became blocked.
+
+        This prevents abrupt stop-turn behavior before the center point,
+        which otherwise looks like oscillation at tight corners.
+
+        Returns `True` when movement for this tick is already handled.
+        """
         if (
             self._direction == (0, 0)
             or direction_is_open(cell_value, self._direction)
@@ -290,7 +334,12 @@ class Ghost(Entity):
         target_cell_x: int | None,
         target_cell_y: int | None,
     ) -> Direction:
-        """Choose direction using target-tile rules; fallback to random roaming."""
+        """Choose next direction from either target or roaming behavior.
+
+        If both ghost and target tiles are known, this uses the target-tile
+        mechanic. Otherwise, it falls back to roaming movement so the ghost can
+        still move in contexts where tile coordinates are unavailable.
+        """
         # Classic rule: at intersections, pick the legal move that gets closest
         # to the target tile, excluding reverse unless forced.
         if (
@@ -310,7 +359,11 @@ class Ghost(Entity):
         return self._select_random_direction(open_directions)
 
     def _select_random_direction(self, open_directions: list[Direction]) -> Direction:
-        """Return roaming direction, preferring not to reverse when possible."""
+        """Return roaming direction, preferring not to reverse when possible.
+
+        The current direction is kept with moderate probability so ghosts look
+        less jittery and do not over-turn at every intersection.
+        """
         reverse_direction = (-self._direction[0], -self._direction[1])
         non_reverse_directions = [
             direction
@@ -331,7 +384,10 @@ class Ghost(Entity):
         direction: Direction,
         cell_value: int,
     ) -> Direction:
-        """Return zero direction when selected move is no longer legal."""
+        """Validate selected direction against cell exits.
+
+        Returns `(0, 0)` if the move is currently blocked.
+        """
         if direction != (0, 0) and not direction_is_open(cell_value, direction):
             return (0, 0)
         return direction
@@ -343,7 +399,11 @@ class Ghost(Entity):
         offset_x: float,
         offset_y: float,
     ) -> None:
-        """Persist direction and update velocity plus lane alignment."""
+        """Persist direction and apply velocity and lane alignment.
+
+        Lane snapping keeps the ghost anchored to maze corridors even when
+        floating-point drift accumulates over many frames.
+        """
         self._direction = direction
         self.move(direction[0], direction[1])
         self.snap_to_lane(
@@ -368,7 +428,21 @@ class Ghost(Entity):
         target_cell_x: int | None = None,
         target_cell_y: int | None = None,
     ) -> None:
-        """Resolve ghost movement for one tick using center-based turns."""
+        """Resolve one movement tick using center-based intersection logic.
+
+        Args:
+            cell_value: Maze bitmask for the ghost's current tile.
+            center_x: World-space x of current tile center.
+            center_y: World-space y of current tile center.
+            cell_size: Tile size in pixels.
+            offset_x: Maze x offset in world-space pixels.
+            offset_y: Maze y offset in world-space pixels.
+            maze_grid: Optional full maze grid for BFS path scoring.
+            ghost_cell_x: Optional ghost tile x index.
+            ghost_cell_y: Optional ghost tile y index.
+            target_cell_x: Optional target tile x index.
+            target_cell_y: Optional target tile y index.
+        """
         open_directions = self._open_directions(cell_value)
         if not open_directions:
             self._apply_direction(
