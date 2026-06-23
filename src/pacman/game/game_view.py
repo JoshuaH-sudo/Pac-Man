@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from pacman.ui.main_menu import MainMenu
 
 LOGGER = logging.getLogger(__name__)
+GHOST_VULNERABILITY_DURATION_SECONDS = 6.0
 GHOST_SPRITE_SHEETS: tuple[str, ...] = (
     "Blinky.png",
     "Pinky.png",
@@ -126,6 +127,7 @@ class GameView(arcade.View):
         self.state = GameState()
         self.config: GameConfig | None = None
         self.main_menu: MainMenu | None = None
+        self._ghost_vulnerability_remaining = 0.0
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
         if self._debug_enabled:
             logging.basicConfig(
@@ -152,6 +154,8 @@ class GameView(arcade.View):
     def on_update(self, delta_time: float) -> None:
         if self.window is None:
             return
+
+        self._update_ghost_vulnerability(delta_time)
 
         prev_x = self._player.center_x
         prev_y = self._player.center_y
@@ -383,6 +387,10 @@ class GameView(arcade.View):
         for item in collided_items:
             item.remove_from_sprite_lists()
             if isinstance(item, SuperPacgum):
+                self._ghost_vulnerability_remaining = (
+                    GHOST_VULNERABILITY_DURATION_SECONDS
+                )
+                self._set_all_ghosts_vulnerable(True)
                 self.state.add_super_pacgum(
                     self.config.points_per_super_pacgum
                     if self.config is not None
@@ -394,6 +402,22 @@ class GameView(arcade.View):
                     if self.config is not None
                     else Pacgum.POINT_VALUE
                 )
+
+    def _update_ghost_vulnerability(self, delta_time: float) -> None:
+        """Expire ghost vulnerability state when the super-pacgum window ends."""
+        if self._ghost_vulnerability_remaining <= 0.0:
+            return
+
+        self._ghost_vulnerability_remaining = max(
+            0.0, self._ghost_vulnerability_remaining - delta_time
+        )
+        if self._ghost_vulnerability_remaining == 0.0:
+            self._set_all_ghosts_vulnerable(False)
+
+    def _set_all_ghosts_vulnerable(self, is_vulnerable: bool) -> None:
+        """Apply vulnerability visuals to all ghosts at once."""
+        for ghost in self._ghosts:
+            ghost.set_vulnerable(is_vulnerable)
 
     def _current_cell_value(self) -> int:
         """Return wall flags for the maze cell currently containing the player."""

@@ -27,11 +27,24 @@ class Ghost(Entity):
             center_x=center_x,
             center_y=center_y,
             scale=scale,
-            rows=1,
+            rows=2,
             columns=1,
         )
+        self.define_animation("idle", [(0, 0)])
+        self.define_animation("vulnerable", [(1, 0)])
+        self.set_animation_frame("idle")
+
         self._speed = speed
         self._direction: Direction = (0, 0)
+        self._is_vulnerable = False
+
+    def set_vulnerable(self, is_vulnerable: bool) -> None:
+        """Switch between idle and vulnerability ghost sprite rows."""
+        if self._is_vulnerable == is_vulnerable:
+            return
+
+        self._is_vulnerable = is_vulnerable
+        self.set_animation_frame("vulnerable" if is_vulnerable else "idle")
 
     def move(self, horizontal: int, vertical: int) -> None:
         """Set movement direction for the current update loop."""
