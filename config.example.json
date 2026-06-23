@@ -22,7 +22,7 @@
 
   # Level definitions (at least 10 required)
   "levels": [
-    { "width": 21, "height": 21 },
+    { "width": 10, "height": 10 },
     { "width": 21, "height": 21 },
     { "width": 22, "height": 22 },
     { "width": 23, "height": 23 },

@@ -35,6 +35,7 @@ if TYPE_CHECKING:
     from pacman.ui.main_menu import MainMenu
 
 LOGGER = logging.getLogger(__name__)
+GHOST_VULNERABILITY_DURATION_SECONDS = 6.0
 GHOST_SPRITE_SHEETS: tuple[str, ...] = (
     "Blinky.png",
     "Pinky.png",
@@ -127,6 +128,7 @@ class GameView(arcade.View):
         if self.config:
             self.state = GameState(self.config)
         self.main_menu: MainMenu | None = None
+        self._ghost_vulnerability_remaining = 0.0
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
         if self._debug_enabled:
             logging.basicConfig(
@@ -161,6 +163,8 @@ class GameView(arcade.View):
     def on_update(self, delta_time: float) -> None:
         if self.window is None:
             return
+
+        self._update_ghost_vulnerability(delta_time)
 
         prev_x = self._player.center_x
         prev_y = self._player.center_y
@@ -366,12 +370,31 @@ class GameView(arcade.View):
             self.window.width,
             self.window.height,
         )
-        for ghost in self._ghosts:
-            cell_x, cell_y = self._cell_indices_for_position(
-                ghost.center_x,
-                ghost.center_y,
-            )
+        player_cell_x, player_cell_y = self._current_cell_indices()
+        player_direction = self._movement.current_direction
+
+        ghost_cells = [
+            self._cell_indices_for_position(ghost.center_x, ghost.center_y)
+            for ghost in self._ghosts
+        ]
+        blinky_cell = (
+            ghost_cells[0] if ghost_cells else (player_cell_x, player_cell_y)
+        )
+
+        for index, (ghost, (cell_x, cell_y)) in enumerate(
+            zip(self._ghosts, ghost_cells)
+        ):
             cell_value = int(self._maze_grid[cell_y][cell_x])
+            target_cell_x, target_cell_y = self._target_tile_for_ghost(
+                ghost_index=index,
+                ghost_cell_x=cell_x,
+                ghost_cell_y=cell_y,
+                player_cell_x=player_cell_x,
+                player_cell_y=player_cell_y,
+                player_direction=player_direction,
+                blinky_cell_x=blinky_cell[0],
+                blinky_cell_y=blinky_cell[1],
+            )
 
             center_x, center_y = self._maze_display.cell_center(
                 self.window.width,
@@ -386,7 +409,98 @@ class GameView(arcade.View):
                 cell_size=cell_size,
                 offset_x=offset_x,
                 offset_y=offset_y,
+                maze_grid=self._maze_grid,
+                ghost_cell_x=cell_x,
+                ghost_cell_y=cell_y,
+                target_cell_x=target_cell_x,
+                target_cell_y=target_cell_y,
             )
+
+    def _target_tile_for_ghost(
+        self,
+        ghost_index: int,
+        ghost_cell_x: int,
+        ghost_cell_y: int,
+        player_cell_x: int,
+        player_cell_y: int,
+        player_direction: tuple[int, int],
+        blinky_cell_x: int,
+        blinky_cell_y: int,
+    ) -> tuple[int, int]:
+        """Return target tile for ghost personality (Blinky/Pinky/Inky/Clyde)."""
+        # Vulnerable mode uses flee logic in Ghost; pass player tile so ghosts
+        # run away from Pac-Man consistently regardless of personality.
+        if self._ghost_vulnerability_remaining > 0.0:
+            return player_cell_x, player_cell_y
+
+        if ghost_index == 0:
+            # Blinky: direct chaser.
+            return player_cell_x, player_cell_y
+
+        if ghost_index == 1:
+            # Pinky: target 4 tiles ahead of Pac-Man heading.
+            return self._tile_ahead_of_player(
+                player_cell_x,
+                player_cell_y,
+                player_direction,
+                steps=4,
+            )
+
+        if ghost_index == 2:
+            # Inky: build vector from Blinky to 2-ahead tile, then double it.
+            ahead_x, ahead_y = self._tile_ahead_of_player(
+                player_cell_x,
+                player_cell_y,
+                player_direction,
+                steps=2,
+            )
+            vector_x = ahead_x - blinky_cell_x
+            vector_y = ahead_y - blinky_cell_y
+            return self._clamp_cell_indices(
+                ahead_x + vector_x,
+                ahead_y + vector_y,
+            )
+
+        # Clyde: chase when far, switch to bottom-left corner when within 8.
+        if self._manhattan_distance(
+            ghost_cell_x,
+            ghost_cell_y,
+            player_cell_x,
+            player_cell_y,
+        ) <= 8:
+            return self._clamp_cell_indices(0, self._maze_display.rows - 1)
+        return player_cell_x, player_cell_y
+
+    def _tile_ahead_of_player(
+        self,
+        player_cell_x: int,
+        player_cell_y: int,
+        player_direction: tuple[int, int],
+        steps: int,
+    ) -> tuple[int, int]:
+        """Return clamped tile N steps ahead of player heading.
+
+        Grid row indices increase downward, so world-space +Y maps to row -1.
+        """
+        target_x = player_cell_x + (player_direction[0] * steps)
+        target_y = player_cell_y - (player_direction[1] * steps)
+        return self._clamp_cell_indices(target_x, target_y)
+
+    def _clamp_cell_indices(self, cell_x: int, cell_y: int) -> tuple[int, int]:
+        """Clamp raw cell coordinates into current maze bounds."""
+        clamped_x = max(0, min(self._maze_display.cols - 1, cell_x))
+        clamped_y = max(0, min(self._maze_display.rows - 1, cell_y))
+        return clamped_x, clamped_y
+
+    @staticmethod
+    def _manhattan_distance(
+        cell_x1: int,
+        cell_y1: int,
+        cell_x2: int,
+        cell_y2: int,
+    ) -> int:
+        """Return Manhattan distance between two grid cells."""
+        return abs(cell_x1 - cell_x2) + abs(cell_y1 - cell_y2)
 
     def _collect_item_collisions(self) -> None:
         """Consume collided pacgums and apply score updates."""
@@ -394,6 +508,10 @@ class GameView(arcade.View):
         for item in collided_items:
             item.remove_from_sprite_lists()
             if isinstance(item, SuperPacgum):
+                self._ghost_vulnerability_remaining = (
+                    GHOST_VULNERABILITY_DURATION_SECONDS
+                )
+                self._set_all_ghosts_vulnerable(True)
                 self.state.add_super_pacgum(
                     self.config.points_per_super_pacgum
                     if self.config is not None
@@ -405,6 +523,22 @@ class GameView(arcade.View):
                     if self.config is not None
                     else Pacgum.POINT_VALUE
                 )
+
+    def _update_ghost_vulnerability(self, delta_time: float) -> None:
+        """Expire ghost vulnerability state when the super-pacgum window ends."""
+        if self._ghost_vulnerability_remaining <= 0.0:
+            return
+
+        self._ghost_vulnerability_remaining = max(
+            0.0, self._ghost_vulnerability_remaining - delta_time
+        )
+        if self._ghost_vulnerability_remaining == 0.0:
+            self._set_all_ghosts_vulnerable(False)
+
+    def _set_all_ghosts_vulnerable(self, is_vulnerable: bool) -> None:
+        """Apply vulnerability visuals to all ghosts at once."""
+        for ghost in self._ghosts:
+            ghost.set_vulnerable(is_vulnerable)
 
     def _current_cell_value(self) -> int:
         """Return wall flags for the maze cell currently containing the player."""
