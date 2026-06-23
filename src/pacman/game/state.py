@@ -12,6 +12,8 @@ class GameState:
     """Mutable per-run game state values used by gameplay systems."""
 
     def __init__(self, config: GameConfig) -> None:
+        self.config = config
+
         self.lives: int = config.lives
         self.level: int = 1
         self.score: int = 0
@@ -34,3 +36,10 @@ class GameState:
 
     def advance_level(self) -> None:
         self.level += 1
+        self.reset_level()
+
+    def reset_level(self) -> None:
+        """Resets pacgums and timer but score and lives persist."""
+        self.pacgums_eaten = 0
+        self.super_pacgums_eaten = 0
+        self.timer = self.config.level_max_time

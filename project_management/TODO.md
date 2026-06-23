@@ -68,7 +68,7 @@ This checklist is organized to match the subject requirements and the current re
 
 ## 9. User Interface (yanlu)
 - [x] Build a main menu with Start Game, View Highscores, Instructions, and Exit. (05.06.-07.06.)
-- [ ] Build an always-visible HUD with score, lives, level, and remaining time. (23.06-)
+- [x] Build an always-visible HUD with score, lives, level, and remaining time. (23.06)
 - [x] Build a pause menu with Resume and Return to Main Menu. (18.06.)
 - [x] Build a game-over screen with final score and highscore name entry. (16.06.)
 - [x] Build a victory screen with final score, message, and highscore name entry. (16.06)
