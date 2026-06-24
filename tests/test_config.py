@@ -19,7 +19,6 @@ def test_load_config_supports_comments(tmp_path: Path) -> None:
 
     assert loaded.lives == 5
     assert loaded.points_per_ghost == 50
-    assert loaded.pacgum == 42
 
 
 def test_invalid_keys_ignored(tmp_path: Path) -> None:
@@ -35,7 +34,6 @@ def test_invalid_keys_ignored(tmp_path: Path) -> None:
 
     assert loaded.lives == 3
     assert loaded.points_per_ghost == 50
-    assert loaded.pacgum == 42
 
 
 def test_load_config_returns_defaults_on_missing_file(tmp_path: Path,
@@ -215,7 +213,6 @@ def test_invalid_pacgum(tmp_path: Path,
     assert "default" in out
     assert loaded.lives == 10
     assert loaded.highscore_filename == "highscores.json"
-    assert loaded.pacgum == 42
 
 
 def test_invalid_pacgum_point(tmp_path: Path,

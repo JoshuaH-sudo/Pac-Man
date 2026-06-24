@@ -9,7 +9,6 @@ import arcade
 
 from pacman.core import Parser
 from pacman.core import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH
-from pacman.game import GameState, GameView
 from pacman.ui.main_menu import MainMenu
 
 USAGE = "Usage: python3 pac-man.py config.json"
