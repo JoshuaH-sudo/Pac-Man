@@ -192,7 +192,6 @@ class GameView(arcade.View):
         self._items.draw()
         self._players.draw()
         self._ghosts.draw()
-        # replace the four arcade.Text(...).draw() lines in on_draw with:
         self._update_label_text(self._timer_label, f"Timer: {int(self.state.timer)}")
         self._update_label_text(self._score_label, f"Score: {self.state.score}")
         self._update_label_text(self._lives_label, f"Lives: {self.state.lives}")
@@ -276,6 +275,11 @@ class GameView(arcade.View):
         self._keep_player_on_screen()
 
         self.state.timer -= delta_time
+        # End game
+        if self.state.timer <= 0 and self.state.pacgums_eaten <= self.config.pacgum:
+            self._show_endscreen(False)
+        if self.state.level > len(self.config.levels) + 1:
+            self._show_endscreen(True)
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
         del modifiers
@@ -294,29 +298,10 @@ class GameView(arcade.View):
             return
 
         if symbol == arcade.key.O and self.config is not None:
-            from pacman.ui.end_screen import EndScreen
+            self._show_endscreen(False)
 
-            self.window.show_view(
-                EndScreen(
-                    message="Game over!",
-                    color=arcade.color.WHITE,
-                    score=self.state.score,
-                    config=self.config,
-                    game=self,
-                )
-            )
         if symbol == arcade.key.V and self.config is not None:
-            from pacman.ui.end_screen import EndScreen
-
-            self.window.show_view(
-                EndScreen(
-                    message="You won!",
-                    color=arcade.color.YELLOW,
-                    score=self.state.score,
-                    config=self.config,
-                    game=self,
-                )
-            )
+            self._show_endscreen(True)
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
@@ -649,3 +634,23 @@ class GameView(arcade.View):
         """Only assign new text when it changed, to avoid unnecessary relayout."""
         if label.text != text:
             label.text = text
+
+    def _show_endscreen(self, won: bool) -> None:
+        from pacman.ui.end_screen import EndScreen
+
+        if won:
+            message = "You won!"
+            color = arcade.color.YELLOW
+        else:
+            message = "Game over!"
+            color = arcade.color.WHITE
+
+        self.window.show_view(
+            EndScreen(
+                message=message,
+                color=color,
+                score=self.state.score,
+                config=self.config,
+                game=self,
+            )
+        )

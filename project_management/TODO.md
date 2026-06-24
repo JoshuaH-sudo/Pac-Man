@@ -25,10 +25,10 @@ This checklist is organized to match the subject requirements and the current re
 - [ ] Convert generated maze data into game tiles, spawn points, corridors, and walls.
 - [ ] Add tests for adapter behavior where feasible.
 
-## 4. Core Game Loop and State Machine
-- [ ] Implement a main state machine for menu, gameplay, pause, game over, victory, and highscore entry.
+## 4. Core Game Loop and State Machine (yanlu 05.06 - )
+- [x] Implement a main state machine for menu, gameplay, pause, game over, victory, and highscore entry.
 - [ ] Make the flow follow: Main Menu -> Start Game -> Win/Lose -> Enter Name -> Back to Main Menu.
-- [ ] Keep score, lives, level number, and time remaining in a central game session model.
+- [x] Keep score, lives, level number, and time remaining in a central game session model.
 - [ ] Preserve score and remaining lives across levels.
 - [ ] Return cleanly to the main menu after a finished run.
 
@@ -70,7 +70,7 @@ This checklist is organized to match the subject requirements and the current re
 - [x] Build a main menu with Start Game, View Highscores, Instructions, and Exit. (05.06.-07.06.)
 - [x] Build an always-visible HUD with score, lives, level, and remaining time. (23.06 - 24.06.)
 - [x] Build a pause menu with Resume and Return to Main Menu. (18.06.)
-- [x] Build a game-over screen with final score and highscore name entry. (16.06.)
+- [x] Build a game-over screen with final score anccd highscore name entry. (16.06.)
 - [x] Build a victory screen with final score, message, and highscore name entry. (16.06)
 - [ ] Keep controls readable and evaluator-friendly.
 
