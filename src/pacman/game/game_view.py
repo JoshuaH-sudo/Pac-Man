@@ -101,6 +101,7 @@ class GameView(arcade.View):
             self._maze_display.cols,
             self._maze_display.rows,
         )
+        self._initialized = False
 
         center_cell_value = int(maze_grid[self._player_cell_y][self._player_cell_x])
 
@@ -196,7 +197,9 @@ class GameView(arcade.View):
 
     def on_show_view(self) -> None:
         arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
-        self._sync_entities_to_maze()
+        if not self._initialized:
+            self._sync_entities_to_maze()
+            self._initialized = True
         self.manager.enable()
 
     def on_resize(self, width: int, height: int) -> None:
