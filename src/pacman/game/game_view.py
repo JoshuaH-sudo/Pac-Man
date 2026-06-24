@@ -146,6 +146,27 @@ class GameView(arcade.View):
         def on_click_pause_button(event: arcade.gui.UIOnClickEvent) -> None:
             self._open_pause_menu()
 
+        # HUD
+        self._level_label = arcade.gui.UILabel(text="Level: 1", font_size=14)
+        self._lives_label = arcade.gui.UILabel(text="Lives: 0", font_size=14)
+        self._score_label = arcade.gui.UILabel(text="Score: 0", font_size=14)
+        self._timer_label = arcade.gui.UILabel(text="Timer: 0", font_size=14)
+
+        self.hud_box = arcade.gui.UIBoxLayout(vertical=True, space_between=4,
+                                              align="left")
+        self.hud_box.add(self._level_label)
+        self.hud_box.add(self._lives_label)
+        self.hud_box.add(self._score_label)
+        self.hud_box.add(self._timer_label)
+
+        self.anchor.add(
+            anchor_x="left",
+            anchor_y="bottom",
+            align_x=12,
+            align_y=12,
+            child=self.hud_box,
+        )
+
         self._ghost_vulnerability_remaining = 0.0
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
         if self._debug_enabled:
@@ -171,14 +192,11 @@ class GameView(arcade.View):
         self._items.draw()
         self._players.draw()
         self._ghosts.draw()
-        arcade.Text(f"Timer: {int(self.state.timer)}", 12, 12,
-                    font_size=14, align="center").draw()
-        arcade.Text(f"Score: {self.state.score}", 12, 36,
-                    font_size=14, align="center").draw()
-        arcade.Text(f"Lives: {self.state.lives}", 12, 60,
-                    font_size=14, align="center").draw()
-        arcade.Text(f"Level: {self.state.level}", 12, 84,
-                    font_size=14, align="center").draw()
+        # replace the four arcade.Text(...).draw() lines in on_draw with:
+        self._update_label_text(self._timer_label, f"Timer: {int(self.state.timer)}")
+        self._update_label_text(self._score_label, f"Score: {self.state.score}")
+        self._update_label_text(self._lives_label, f"Lives: {self.state.lives}")
+        self._update_label_text(self._level_label, f"Level: {self.state.level}")
         self.manager.draw()
 
     def on_update(self, delta_time: float) -> None:
@@ -625,3 +643,9 @@ class GameView(arcade.View):
         from pacman.ui.pause_menu import PauseMenu
 
         self.window.show_view(PauseMenu(game=self, main_menu=self.main_menu))
+
+    @staticmethod
+    def _update_label_text(label: arcade.gui.UILabel, text: str) -> None:
+        """Only assign new text when it changed, to avoid unnecessary relayout."""
+        if label.text != text:
+            label.text = text
