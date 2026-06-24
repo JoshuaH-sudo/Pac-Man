@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Sequence
 import arcade
 import arcade.gui
 
+from mazegenerator import MazeGenerator
+
 from pacman.core import (
     GHOST_CELL_FRACTION,
     GHOST_SPEED_RATIO,
@@ -65,8 +67,28 @@ def _env_flag_is_enabled(name: str) -> bool:
 class GameView(arcade.View):
     """Main game view that renders maze, entities, and update loop."""
 
-    def __init__(self, maze_grid: Sequence[Sequence[int]], config: GameConfig):
+    def __init__(self, config: GameConfig, state: GameState,
+                 main_menu: "MainMenu | None" = None) -> None:
         super().__init__()
+
+        self.config = config
+        self.state = state
+        self.main_menu = main_menu
+
+        # Generate a new maze
+        level_width, level_height = config.levels[self.state.level - 1]
+        generator = MazeGenerator(
+            size=(level_width, level_height),
+            perfect=False,
+            seed=config.seed if self.state.level == 1 else 0,
+        )
+        maze_grid = generator.maze
+
+        print(f"Maze dimensions: {len(maze_grid[0])}x{len(maze_grid)}")
+        for row in maze_grid:
+            # print hexadecimal values for better visualization
+            print("".join(f"{cell:2X}" for cell in row))
+
         self._maze_grid = tuple(tuple(int(cell) for cell in row) for row in maze_grid)
         self._maze_display = MazeDisplay(maze_grid)
         self._player_cell_x = center_cell_index(self._maze_display.cols)
@@ -74,6 +96,7 @@ class GameView(arcade.View):
         self._item_cells = _build_item_cells(self._maze_grid)
         self._super_item_cells = _build_super_item_cells(self._maze_grid)
         self._all_item_cells = self._item_cells + self._super_item_cells
+        self._count_pacgums = len(self._all_item_cells)
         self._ghost_cells = _build_corner_cells(
             self._maze_display.cols,
             self._maze_display.rows,
@@ -125,11 +148,6 @@ class GameView(arcade.View):
             )
 
         self._movement = MovementController(choose_initial_direction(center_cell_value))
-
-        self.config = config
-        if self.config:
-            self.state = GameState(self.config)
-        self.main_menu: MainMenu | None = None
 
         self.manager = arcade.gui.UIManager()
         self.anchor = self.manager.add(arcade.gui.UIAnchorLayout())
@@ -275,10 +293,18 @@ class GameView(arcade.View):
         self._keep_player_on_screen()
 
         self.state.timer -= delta_time
+
+        all_gums_eaten = self.state.pacgums_eaten + self.state.super_pacgums_eaten
+        # Advance level
+        if self.state.lives > 0 and self.state.timer >= 0 \
+                and all_gums_eaten >= self._count_pacgums:
+            self.state.advance_level()
+
         # End game
-        if self.state.timer <= 0 and self.state.pacgums_eaten <= self.config.pacgum:
+        if self.state.lives <= 0 or (self.state.timer < 0
+                                     and all_gums_eaten < self._count_pacgums):
             self._show_endscreen(False)
-        if self.state.level > len(self.config.levels) + 1:
+        if self.state.lives > 0 and self.state.level > len(self.config.levels) + 1:
             self._show_endscreen(True)
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
@@ -294,9 +320,6 @@ class GameView(arcade.View):
         ##################################
         # TESTING: Shortcut to pause and end screens
         ##################################
-        if self.window is None:
-            return
-
         if symbol == arcade.key.O and self.config is not None:
             self._show_endscreen(False)
 
@@ -627,7 +650,7 @@ class GameView(arcade.View):
 
         from pacman.ui.pause_menu import PauseMenu
 
-        self.window.show_view(PauseMenu(game=self, main_menu=self.main_menu))
+        self.window.show_view(PauseMenu(self.config, game=self))
 
     @staticmethod
     def _update_label_text(label: arcade.gui.UILabel, text: str) -> None:
@@ -636,6 +659,9 @@ class GameView(arcade.View):
             label.text = text
 
     def _show_endscreen(self, won: bool) -> None:
+        if self.window is None:
+            return
+
         from pacman.ui.end_screen import EndScreen
 
         if won:

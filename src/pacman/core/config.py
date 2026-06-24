@@ -21,11 +21,10 @@ class GameConfig(BaseModel):
     levels: list[tuple[int, int]] = Field(
         default=[(_DEFAULT_LEVEL_WIDTH, _DEFAULT_LEVEL_HEIGHT)] * _MIN_LEVELS)
     lives: int = Field(default=3, gt=0)
-    pacgum: int = Field(default=42, ge=0)
     points_per_pacgum: int = Field(default=10, ge=0)
     points_per_super_pacgum: int = Field(default=50, ge=0)
     points_per_ghost: int = Field(default=200, ge=0)
-    seed: int | float | str = Field(default=42)
+    seed: int = Field(default=42)
     level_max_time: int = Field(default=90, gt=0)
 
     @model_validator(mode="after")
@@ -50,11 +49,11 @@ class GameConfig(BaseModel):
 _DEFAULT_CONFIG = GameConfig()
 _INT_FIELDS = {
     "lives",
-    "pacgum",
     "points_per_pacgum",
     "points_per_super_pacgum",
     "points_per_ghost",
     "level_max_time",
+    "seed"
 }
 
 
@@ -90,7 +89,6 @@ class Parser:
             "highscore_filename": _DEFAULT_CONFIG.highscore_filename,
             "levels": _DEFAULT_CONFIG.levels,
             "lives": _DEFAULT_CONFIG.lives,
-            "pacgum": _DEFAULT_CONFIG.pacgum,
             "points_per_pacgum": _DEFAULT_CONFIG.points_per_pacgum,
             "points_per_super_pacgum": _DEFAULT_CONFIG.points_per_super_pacgum,
             "points_per_ghost": _DEFAULT_CONFIG.points_per_ghost,
@@ -106,8 +104,6 @@ class Parser:
                 merged[key] = self._coerce_non_empty_str(value, merged[key])
             elif key == "levels":
                 merged[key] = self._coerce_levels(value, merged[key])
-            elif key == "seed":
-                merged[key] = self._coerce_seed(value, merged[key])
 
         try:
             return GameConfig(**merged)
@@ -197,14 +193,6 @@ class Parser:
             for i in range(missing):
                 res.append(default_level)
         return res
-
-    @staticmethod
-    def _coerce_seed(value: Any, default: int) -> int | float | str:
-        if isinstance(value, int) or isinstance(value, float) or isinstance(value, str):
-            return value
-        Parser._print_config_error(f"{value} is not a valid seed value. "
-                                   "Using the default seed instead.")
-        return default
 
     @staticmethod
     def _print_config_error(error: str) -> None:

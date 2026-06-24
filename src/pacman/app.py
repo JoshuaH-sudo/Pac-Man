@@ -6,11 +6,10 @@ from pathlib import Path
 import sys
 
 import arcade
-from mazegenerator import MazeGenerator
 
 from pacman.core import Parser
 from pacman.core import WINDOW_HEIGHT, WINDOW_TITLE, WINDOW_WIDTH
-from pacman.game import GameView
+from pacman.game import GameState, GameView
 from pacman.ui.main_menu import MainMenu
 
 USAGE = "Usage: python3 pac-man.py config.json"
@@ -43,27 +42,11 @@ def main(argv: list[str] | None = None) -> int:
     print(f"Configured lives: {config.lives}")
     # print(f"Loaded highscores: {len(highscores)}")
 
-    level_width, level_height = config.levels[0]
-    generator = MazeGenerator(
-        size=(level_width, level_height),
-        perfect=False,
-    )
-    generator.generate()
-    maze_grid = generator.maze
-
-    print(f"Maze dimensions: {len(maze_grid[0])}x{len(maze_grid)}")
-    for row in maze_grid:
-        # print hexadecimal values for better visualization
-        print("".join(f"{cell:2X}" for cell in row))
-
     # Create a window class. This is what actually shows up on screen
     window = arcade.Window(WINDOW_WIDTH, WINDOW_HEIGHT, WINDOW_TITLE)
 
-    # Create and setup the GameView
-    game = GameView(maze_grid, config)
-    menu = MainMenu(game, config)
-    game.main_menu = menu
-    menu.instruction.main_menu = menu
+    # Create and setup the game
+    menu = MainMenu(config)
 
     # Show GameView on screen
     window.show_view(menu)

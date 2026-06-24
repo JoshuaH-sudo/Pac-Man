@@ -2,9 +2,8 @@ import arcade
 import arcade.gui
 from typing import Any, cast
 
-from pacman.game import GameView
 from pacman.core import GameConfig
-from pacman.game import HighScore
+from pacman.game import HighScore, GameView, GameState
 
 UISpace = cast(Any, arcade.gui.UISpace)
 
@@ -103,12 +102,13 @@ class MainMenu(arcade.View):
     - exit
     """
     def __init__(self,
-                 game: GameView, config: GameConfig) -> None:
+                 config: GameConfig) -> None:
         super().__init__()
         self.manager = arcade.gui.UIManager()
 
-        self.instruction = InstructionView(game)
-        self.game = game
+        self.state = GameState(config)
+        self.game = GameView(config, self.state, self)
+        self.instruction = InstructionView(self.game, self)
         self.highscores = HighScore(config.highscore_filename).load_highscores()
 
         # Outer Box

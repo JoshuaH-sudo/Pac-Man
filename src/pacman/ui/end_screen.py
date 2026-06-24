@@ -4,9 +4,8 @@ from arcade.gui.events import UIKeyPressEvent, UITextInputEvent
 from typing import Any, cast, Callable
 
 from pacman.core import GameConfig, WINDOW_WIDTH, WINDOW_HEIGHT
-from pacman.game import HighScore, HighscoreEntry
+from pacman.game import HighScore, HighscoreEntry, GameView, GameState
 from pacman.ui.main_menu import MainMenu
-from pacman.game import GameView
 
 UISpace = cast(Any, arcade.gui.UISpace)
 
@@ -97,13 +96,18 @@ class EndScreen(arcade.View):
 
         @start_button.event("on_click")
         def on_click_start_button(event: arcade.gui.UIOnClickEvent) -> None:
+            # Reset game state and create a new game
+            state = GameState(self.config)
+            if not self.main_menu:
+                self.main_menu = MainMenu(config)
+            self.game = GameView(self.config, state, self.main_menu)
             self.window.show_view(self.game)
 
         @back_button.event("on_click")
         def on_click_back(event: arcade.gui.UIOnClickEvent) -> None:
+            # Create a new main menu and thus a new game
             if not self.main_menu:
-                self.main_menu = MainMenu(game, config)
-                self.main_menu.instruction.main_menu = self.main_menu
+                self.main_menu = MainMenu(config)
             if self.main_menu:
                 self.window.show_view(self.main_menu)
 

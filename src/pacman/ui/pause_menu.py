@@ -2,8 +2,9 @@ import arcade
 import arcade.gui
 from typing import Any, cast
 
+from pacman.core import GameConfig
 from pacman.ui.main_menu import MainMenu
-from pacman.game import GameView
+from pacman.game import GameView, GameState
 
 UISpace = cast(Any, arcade.gui.UISpace)
 
@@ -14,13 +15,14 @@ class PauseMenu(arcade.View):
     - Resume the game
     - Return to the main menu
     """
-    def __init__(self,
-                 game: GameView, main_menu: MainMenu) -> None:
+    def __init__(self, config: GameConfig,
+                 game: GameView) -> None:
         super().__init__()
         self.manager = arcade.gui.UIManager()
 
+        self.config = config
         self.game = game
-        self.main_menu = main_menu
+        self.main_menu = MainMenu(config)
 
         # Outer Box
         outer_box = arcade.gui.UIBoxLayout(vertical=True, space_between=20)
@@ -60,6 +62,9 @@ class PauseMenu(arcade.View):
 
         @restart_button.event("on_click")
         def on_click_restart_button(event: arcade.gui.UIOnClickEvent) -> None:
+            # Reset game state and create a new game
+            state = GameState(self.config)
+            self.game = GameView(self.config, state, self.main_menu)
             self.window.show_view(self.game)
 
         @menu_button.event("on_click")
