@@ -383,11 +383,22 @@ class GameView(arcade.View):
         ##################################
         # TESTING: Shortcut to pause and end screens
         ##################################
-        if symbol == arcade.key.O and self.config is not None:
+        if symbol == arcade.key.O:
             self._show_endscreen(False)
 
-        if symbol == arcade.key.V and self.config is not None:
+        if symbol == arcade.key.V:
             self._show_endscreen(True)
+
+        ##################################
+        # TESTING: Shortcut to next level
+        ##################################
+        if symbol == arcade.key.N:
+            self.state.advance_level()
+
+            # If we haven't reached the maximum levels, load the new level
+            if self.state.level <= len(self.config.levels):
+                self._load_level()
+                self._sync_entities_to_maze()
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
