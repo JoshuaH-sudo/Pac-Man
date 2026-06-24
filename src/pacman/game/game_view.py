@@ -75,36 +75,7 @@ class GameView(arcade.View):
         self.state = state
         self.main_menu = main_menu
 
-        # Generate a new maze
-        level_width, level_height = config.levels[self.state.level - 1]
-        generator = MazeGenerator(
-            size=(level_width, level_height),
-            perfect=False,
-            seed=config.seed if self.state.level == 1 else 0,
-        )
-        maze_grid = generator.maze
-
-        print(f"Maze dimensions: {len(maze_grid[0])}x{len(maze_grid)}")
-        for row in maze_grid:
-            # print hexadecimal values for better visualization
-            print("".join(f"{cell:2X}" for cell in row))
-
-        self._maze_grid = tuple(tuple(int(cell) for cell in row) for row in maze_grid)
-        self._maze_display = MazeDisplay(maze_grid)
-        self._player_cell_x = center_cell_index(self._maze_display.cols)
-        self._player_cell_y = center_cell_index(self._maze_display.rows)
-        self._item_cells = _build_item_cells(self._maze_grid)
-        self._super_item_cells = _build_super_item_cells(self._maze_grid)
-        self._all_item_cells = self._item_cells + self._super_item_cells
-        self._count_pacgums = len(self._all_item_cells)
-        self._ghost_cells = _build_corner_cells(
-            self._maze_display.cols,
-            self._maze_display.rows,
-        )
-        self._initialized = False
-
-        center_cell_value = int(maze_grid[self._player_cell_y][self._player_cell_x])
-
+        # Initialize entity sprite lists (empty, will be populated by _load_level)
         self._player = Pacman(
             center_x=0.0,
             center_y=0.0,
@@ -119,23 +90,6 @@ class GameView(arcade.View):
         self._physics_engine: arcade.PhysicsEngineSimple | None = None
 
         self._items: arcade.SpriteList[arcade.Sprite] = arcade.SpriteList()
-        for _ in self._item_cells:
-            self._items.append(
-                Pacgum(
-                    center_x=0.0,
-                    center_y=0.0,
-                    scale=1.0,
-                )
-            )
-        for _ in self._super_item_cells:
-            self._items.append(
-                SuperPacgum(
-                    center_x=0.0,
-                    center_y=0.0,
-                    scale=1.0,
-                )
-            )
-
         self._ghosts: arcade.SpriteList[Ghost] = arcade.SpriteList()
         for ghost_sheet in GHOST_SPRITE_SHEETS:
             self._ghosts.append(
@@ -148,7 +102,21 @@ class GameView(arcade.View):
                 )
             )
 
-        self._movement = MovementController(choose_initial_direction(center_cell_value))
+        # Maze grid will be set by _load_level
+        self._maze_grid: tuple[tuple[int, ...], ...] = ()
+        self._maze_display: MazeDisplay | None = None
+        self._player_cell_x = 0
+        self._player_cell_y = 0
+        self._item_cells: tuple[tuple[float, float], ...] = ()
+        self._super_item_cells: tuple[tuple[float, float], ...] = ()
+        self._all_item_cells: tuple[tuple[float, float], ...] = ()
+        self._count_pacgums = 0
+        self._ghost_cells: tuple[tuple[float, float], ...] = ()
+        self._initialized = False
+        self._level_loaded = False
+
+        # Movement controller will be initialized in _load_level
+        self._movement = MovementController((0, 0))
 
         self.manager = arcade.gui.UIManager()
         self.anchor = self.manager.add(arcade.gui.UIAnchorLayout())
@@ -195,8 +163,89 @@ class GameView(arcade.View):
             )
             LOGGER.debug("PACMAN_DEBUG enabled for movement tracing")
 
+    def _load_level(self) -> None:
+        """Generate and initialize a new maze for the current level."""
+        # Get level dimensions from config
+        level_width, level_height = self.config.levels[self.state.level - 1]
+
+        # Generate a new maze
+        generator = MazeGenerator(
+            size=(level_width, level_height),
+            perfect=False,
+            seed=self.config.seed if self.state.level == 1 else 0,
+        )
+        maze_grid = generator.maze
+
+        msg = (f"Level {self.state.level}: Maze dimensions: "
+               f"{len(maze_grid[0])}x{len(maze_grid)}")
+        print(msg)
+        for row in maze_grid:
+            # print hexadecimal values for better visualization
+            print("".join(f"{cell:2X}" for cell in row))
+
+        # Convert maze grid to tuple of tuples
+        self._maze_grid = tuple(
+            tuple(int(cell) for cell in row) for row in maze_grid
+        )
+
+        # Create maze display
+        self._maze_display = MazeDisplay(maze_grid)
+
+        # Calculate player starting position
+        self._player_cell_x = center_cell_index(self._maze_display.cols)
+        self._player_cell_y = center_cell_index(self._maze_display.rows)
+
+        # Build item cells for this level
+        self._item_cells = _build_item_cells(self._maze_grid)
+        self._super_item_cells = _build_super_item_cells(self._maze_grid)
+        self._all_item_cells = self._item_cells + self._super_item_cells
+        self._count_pacgums = len(self._all_item_cells)
+
+        # Build ghost spawn cells
+        self._ghost_cells = _build_corner_cells(
+            self._maze_display.cols,
+            self._maze_display.rows,
+        )
+
+        # Clear old items
+        self._items.clear()
+
+        # Create new items for this level
+        for _ in self._item_cells:
+            self._items.append(
+                Pacgum(
+                    center_x=0.0,
+                    center_y=0.0,
+                    scale=1.0,
+                )
+            )
+        for _ in self._super_item_cells:
+            self._items.append(
+                SuperPacgum(
+                    center_x=0.0,
+                    center_y=0.0,
+                    scale=1.0,
+                )
+            )
+
+        # Initialize movement controller
+        center_cell_value = int(
+            maze_grid[self._player_cell_y][self._player_cell_x]
+        )
+        self._movement = MovementController(
+            choose_initial_direction(center_cell_value)
+        )
+
+        # Reset ghost vulnerability when level starts
+        self._ghost_vulnerability_remaining = 0.0
+        self._set_all_ghosts_vulnerable(False)
+
+        self._level_loaded = True
+
     def on_show_view(self) -> None:
         arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
+        if not self._level_loaded:
+            self._load_level()
         if not self._initialized:
             self._sync_entities_to_maze()
             self._initialized = True
@@ -209,7 +258,8 @@ class GameView(arcade.View):
 
     def on_draw(self) -> None:
         self.clear()
-        self._maze_display.draw(self.window.width, self.window.height)
+        if self._maze_display is not None:
+            self._maze_display.draw(self.window.width, self.window.height)
         self._items.draw()
         self._players.draw()
         self._ghosts.draw()
@@ -220,7 +270,7 @@ class GameView(arcade.View):
         self.manager.draw()
 
     def on_update(self, delta_time: float) -> None:
-        if self.window is None:
+        if self.window is None or self._maze_display is None:
             return
 
         self._update_ghost_vulnerability(delta_time)
@@ -297,17 +347,27 @@ class GameView(arcade.View):
 
         self.state.timer -= delta_time
 
-        all_gums_eaten = self.state.pacgums_eaten + self.state.super_pacgums_eaten
-        # Advance level
+        all_gums_eaten = (
+            self.state.pacgums_eaten + self.state.super_pacgums_eaten
+        )
+
+        # Check if level is completed
         if self.state.lives > 0 and self.state.timer >= 0 \
                 and all_gums_eaten >= self._count_pacgums:
+            # Level completed
             self.state.advance_level()
 
-        # End game
+            # If we haven't reached the maximum levels, load the new level
+            if self.state.level <= len(self.config.levels):
+                self._load_level()
+                self._sync_entities_to_maze()
+
+        # End game conditions
         if self.state.lives <= 0 or (self.state.timer < 0
                                      and all_gums_eaten < self._count_pacgums):
             self._show_endscreen(False)
-        if self.state.lives > 0 and self.state.level > len(self.config.levels) + 1:
+        elif self.state.lives > 0 and self.state.level > len(
+                self.config.levels):
             self._show_endscreen(True)
 
     def on_key_press(self, symbol: int, modifiers: int) -> None:
@@ -349,7 +409,7 @@ class GameView(arcade.View):
         )
 
     def _sync_entities_to_maze(self) -> None:
-        if self.window is None:
+        if self.window is None or self._maze_display is None:
             return
 
         self._player_cell_x = max(
@@ -411,7 +471,7 @@ class GameView(arcade.View):
 
     def _update_ghosts(self) -> None:
         """Delegate maze-aware movement updates to ghost entities."""
-        if self.window is None:
+        if self.window is None or self._maze_display is None:
             return
 
         cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
@@ -516,7 +576,8 @@ class GameView(arcade.View):
             player_cell_x,
             player_cell_y,
         ) <= 8:
-            return self._clamp_cell_indices(0, self._maze_display.rows - 1)
+            if self._maze_display is not None:
+                return self._clamp_cell_indices(0, self._maze_display.rows - 1)
         return player_cell_x, player_cell_y
 
     def _tile_ahead_of_player(
@@ -536,6 +597,8 @@ class GameView(arcade.View):
 
     def _clamp_cell_indices(self, cell_x: int, cell_y: int) -> tuple[int, int]:
         """Clamp raw cell coordinates into current maze bounds."""
+        if self._maze_display is None:
+            return cell_x, cell_y
         clamped_x = max(0, min(self._maze_display.cols - 1, cell_x))
         clamped_y = max(0, min(self._maze_display.rows - 1, cell_y))
         return clamped_x, clamped_y
@@ -606,7 +669,7 @@ class GameView(arcade.View):
         center_y: float,
     ) -> tuple[int, int]:
         """Return nearest maze cell indices for a world-space position."""
-        if self.window is None:
+        if self.window is None or self._maze_display is None:
             return self._player_cell_x, self._player_cell_y
 
         cell_size, offset_x, offset_y = self._maze_display.layout_for_window(
@@ -625,7 +688,7 @@ class GameView(arcade.View):
 
     def _rebuild_wall_colliders(self) -> None:
         """Recreate collision sprites so walls match the current maze layout."""
-        if self.window is None:
+        if self.window is None or self._maze_display is None:
             return
 
         walls: arcade.SpriteList[arcade.SpriteSolidColor] = (
