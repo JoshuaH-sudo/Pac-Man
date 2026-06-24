@@ -7,6 +7,7 @@ import os
 from typing import TYPE_CHECKING, Sequence
 
 import arcade
+import arcade.gui
 
 from pacman.core import (
     GHOST_CELL_FRACTION,
@@ -124,10 +125,27 @@ class GameView(arcade.View):
             )
 
         self._movement = MovementController(choose_initial_direction(center_cell_value))
+
         self.config = config
         if self.config:
             self.state = GameState(self.config)
         self.main_menu: MainMenu | None = None
+
+        self.manager = arcade.gui.UIManager()
+        self.anchor = self.manager.add(arcade.gui.UIAnchorLayout())
+        pause_button = arcade.gui.UIFlatButton(text="Pause", width=80, height=30)
+        self.anchor.add(
+            anchor_x="right",
+            anchor_y="top",
+            align_x=-10,
+            align_y=-10,
+            child=pause_button,
+        )
+
+        @pause_button.event("on_click")
+        def on_click_pause_button(event: arcade.gui.UIOnClickEvent) -> None:
+            self._open_pause_menu()
+
         self._ghost_vulnerability_remaining = 0.0
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
         if self._debug_enabled:
@@ -140,10 +158,12 @@ class GameView(arcade.View):
     def on_show_view(self) -> None:
         arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
         self._sync_entities_to_maze()
+        self.manager.enable()
 
     def on_resize(self, width: int, height: int) -> None:
         super().on_resize(width, height)
         self._sync_entities_to_maze()
+        self.manager.disable()
 
     def on_draw(self) -> None:
         self.clear()
@@ -159,6 +179,7 @@ class GameView(arcade.View):
                     font_size=14, align="center").draw()
         arcade.Text(f"Level: {self.state.level}", 12, 84,
                     font_size=14, align="center").draw()
+        self.manager.draw()
 
     def on_update(self, delta_time: float) -> None:
         if self.window is None:
@@ -245,6 +266,9 @@ class GameView(arcade.View):
             cell_value = self._current_cell_value()
         self._movement.queue_input(symbol, cell_value)
 
+        if symbol == arcade.key.P and self.main_menu is not None:
+            self._open_pause_menu()
+
         ##################################
         # TESTING: Shortcut to pause and end screens
         ##################################
@@ -275,11 +299,6 @@ class GameView(arcade.View):
                     game=self,
                 )
             )
-
-        if symbol == arcade.key.P and self.main_menu is not None:
-            from pacman.ui.pause_menu import PauseMenu
-
-            self.window.show_view(PauseMenu(game=self, main_menu=self.main_menu))
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
@@ -598,3 +617,11 @@ class GameView(arcade.View):
 
         self._walls = walls
         self._physics_engine = arcade.PhysicsEngineSimple(self._player, self._walls)
+
+    def _open_pause_menu(self) -> None:
+        if self.window is None or self.main_menu is None:
+            return
+
+        from pacman.ui.pause_menu import PauseMenu
+
+        self.window.show_view(PauseMenu(game=self, main_menu=self.main_menu))
