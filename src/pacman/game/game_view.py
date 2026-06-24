@@ -18,6 +18,7 @@ from pacman.core import (
     PLAYER_CELL_FRACTION,
     PLAYER_MOVEMENT_SPEED,
     PLAYER_SPEED_RATIO,
+    WINDOW_WIDTH,
     center_cell_index,
     choose_initial_direction,
     direction_is_open,
@@ -74,6 +75,8 @@ class GameView(arcade.View):
         self.config = config
         self.state = state
         self.main_menu = main_menu
+
+        self.cheat_mode = False
 
         # Initialize entity sprite lists (empty, will be populated by _load_level)
         self._player = Pacman(
@@ -153,6 +156,9 @@ class GameView(arcade.View):
             align_y=12,
             child=self.hud_box,
         )
+
+        self.cheat_mode_text = arcade.Text("Cheat mode", WINDOW_WIDTH - 125, 12,
+                                           font_size=14, align="center")
 
         self._ghost_vulnerability_remaining = 0.0
         self._debug_enabled = _env_flag_is_enabled("PACMAN_DEBUG")
@@ -268,6 +274,8 @@ class GameView(arcade.View):
         self._update_label_text(self._lives_label, f"Lives: {self.state.lives}")
         self._update_label_text(self._level_label, f"Level: {self.state.level}")
         self.manager.draw()
+        if self.cheat_mode:
+            self.cheat_mode_text.draw()
 
     def on_update(self, delta_time: float) -> None:
         if self.window is None or self._maze_display is None:
@@ -380,25 +388,28 @@ class GameView(arcade.View):
         if symbol == arcade.key.P and self.main_menu is not None:
             self._open_pause_menu()
 
-        ##################################
-        # TESTING: Shortcut to pause and end screens
-        ##################################
-        if symbol == arcade.key.O:
-            self._show_endscreen(False)
+        if not self.cheat_mode:
+            if symbol == arcade.key.C:
+                self.cheat_mode = True
+        else:
+            if symbol == arcade.key.C:
+                self.cheat_mode = False
 
-        if symbol == arcade.key.V:
-            self._show_endscreen(True)
+            # Shortcut to pause and end screens
+            if symbol == arcade.key.O:
+                self._show_endscreen(False)
 
-        ##################################
-        # TESTING: Shortcut to next level
-        ##################################
-        if symbol == arcade.key.N:
-            self.state.advance_level()
+            if symbol == arcade.key.V:
+                self._show_endscreen(True)
 
-            # If we haven't reached the maximum levels, load the new level
-            if self.state.level <= len(self.config.levels):
-                self._load_level()
-                self._sync_entities_to_maze()
+            # Shortcut to next level
+            if symbol == arcade.key.N:
+                self.state.advance_level()
+
+                # If we haven't reached the maximum levels, load the new level
+                if self.state.level <= len(self.config.levels):
+                    self._load_level()
+                    self._sync_entities_to_maze()
 
     def on_key_release(self, symbol: int, modifiers: int) -> None:
         del modifiers
