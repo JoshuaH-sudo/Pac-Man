@@ -39,21 +39,10 @@ def build_item_cells(
 def build_super_item_cells(
     maze_grid: Sequence[Sequence[int]],
 ) -> tuple[tuple[float, float], ...]:
-    """Return four near-corner cells for super pacgums in deterministic order."""
+    """Return super pacgum cells matching ghost corner spawn positions."""
     rows = len(maze_grid)
     cols = len(maze_grid[0])
-    max_x = max(0, cols - 1)
-    max_y = max(0, rows - 1)
-    near_left = min(1, max_x)
-    near_right = max(0, max_x - 1)
-    near_top = min(1, max_y)
-    near_bottom = max(0, max_y - 1)
-    return (
-        (float(near_left), float(near_top)),
-        (float(near_right), float(near_top)),
-        (float(near_left), float(near_bottom)),
-        (float(near_right), float(near_bottom)),
-    )
+    return build_corner_cells(cols=cols, rows=rows)
 
 
 def build_corner_cells(cols: int, rows: int) -> tuple[tuple[float, float], ...]:

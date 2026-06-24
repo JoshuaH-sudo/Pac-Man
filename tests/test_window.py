@@ -213,12 +213,12 @@ def test_build_corner_cells_returns_all_four_corners() -> None:
     )
 
 
-def test_build_super_item_cells_places_four_near_corner_items() -> None:
-    """Super pacgums should spawn near each corner in fixed order."""
+def test_build_super_item_cells_matches_ghost_corner_spawns() -> None:
+    """Super pacgums should spawn at the same corner cells as ghosts."""
     maze_grid = [[0] * 10 for _ in range(10)]
     assert build_super_item_cells(maze_grid) == (
-        (1.0, 1.0),
-        (8.0, 1.0),
-        (1.0, 8.0),
-        (8.0, 8.0),
+        (0.0, 0.0),
+        (9.0, 0.0),
+        (0.0, 9.0),
+        (9.0, 9.0),
     )

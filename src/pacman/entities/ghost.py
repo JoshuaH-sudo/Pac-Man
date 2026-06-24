@@ -49,6 +49,18 @@ class Ghost(Entity):
         self._speed = speed
         self._direction: Direction = (0, 0)
         self._is_vulnerable = False
+        self._is_eaten = False
+        self._respawn_remaining_seconds = 0.0
+
+    @property
+    def is_vulnerable(self) -> bool:
+        """Return whether this ghost is currently vulnerable."""
+        return self._is_vulnerable
+
+    @property
+    def is_eaten(self) -> bool:
+        """Return whether this ghost is waiting to respawn."""
+        return self._is_eaten
 
     def set_vulnerable(self, is_vulnerable: bool) -> None:
         """Switch between idle and vulnerability ghost sprite rows.
@@ -56,11 +68,46 @@ class Ghost(Entity):
         Vulnerability also changes target logic: ghosts flee from the player's
         tile instead of moving toward it at intersections.
         """
+        if self._is_eaten:
+            return
+
         if self._is_vulnerable == is_vulnerable:
             return
 
         self._is_vulnerable = is_vulnerable
         self.set_animation_frame("vulnerable" if is_vulnerable else "idle")
+
+    def mark_eaten(self, respawn_delay_seconds: float) -> None:
+        """Move ghost into hidden respawn state for a timed delay."""
+        self._is_eaten = True
+        self._is_vulnerable = False
+        self._respawn_remaining_seconds = max(0.0, respawn_delay_seconds)
+        self._direction = (0, 0)
+        self.move(0, 0)
+        self.set_animation_frame("idle")
+        self.visible = False
+
+    def advance_respawn_timer(self, delta_time: float) -> bool:
+        """Tick down eaten state timer and return True when respawn is due."""
+        if not self._is_eaten:
+            return False
+
+        self._respawn_remaining_seconds = max(
+            0.0,
+            self._respawn_remaining_seconds - delta_time,
+        )
+        return self._respawn_remaining_seconds == 0.0
+
+    def respawn(self, center_x: float, center_y: float, cell_value: int) -> None:
+        """Restore a hidden ghost to its spawn position and heading."""
+        self.center_x = center_x
+        self.center_y = center_y
+        self._is_eaten = False
+        self._is_vulnerable = False
+        self._respawn_remaining_seconds = 0.0
+        self.visible = True
+        self.set_animation_frame("idle")
+        self.set_spawn_direction(cell_value)
 
     def move(self, horizontal: int, vertical: int) -> None:
         """Set movement direction for the current update loop."""
