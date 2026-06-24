@@ -267,3 +267,36 @@ def test_invalid_ghost_point(tmp_path: Path,
     assert loaded.lives == 10
     assert loaded.highscore_filename == "highscores.json"
     assert loaded.points_per_ghost == 200
+
+
+def test_loads_ghost_respawn_delay_seconds_from_config(tmp_path: Path) -> None:
+    """The loader should accept the ghost respawn delay integer setting."""
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        "{\n  \"ghost_respawn_delay_seconds\": 9\n}\n",
+        encoding="utf-8",
+    )
+
+    parser = Parser(config_file)
+    loaded = parser.load_config()
+
+    assert loaded.ghost_respawn_delay_seconds == 9
+
+
+def test_invalid_ghost_respawn_delay_uses_default(
+    tmp_path: Path,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    """Invalid ghost respawn delays should fall back to the default value."""
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        "{\n  \"ghost_respawn_delay_seconds\": -1\n}\n",
+        encoding="utf-8",
+    )
+
+    parser = Parser(config_file)
+    loaded = parser.load_config()
+
+    out = capsys.readouterr().err
+    assert "default" in out
+    assert loaded.ghost_respawn_delay_seconds == 5

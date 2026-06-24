@@ -1,5 +1,8 @@
 """Tests for maze wall rendering and movement geometry."""
 
+from types import SimpleNamespace
+from typing import Any, cast
+
 from pacman.core import (
     CLOSED_EAST,
     CLOSED_NORTH,
@@ -19,6 +22,7 @@ from pacman.maze import (
     build_item_cells,
     build_super_item_cells,
 )
+from pacman.game.game_view import GameView
 from pacman.input import MovementController
 
 
@@ -222,3 +226,77 @@ def test_build_super_item_cells_matches_ghost_corner_spawns() -> None:
         (0.0, 9.0),
         (9.0, 9.0),
     )
+
+
+def test_sync_entities_to_maze_respawns_ghosts_at_spawn() -> None:
+    """Entity sync should use ghost respawn logic so eaten ghosts are restored."""
+
+    class _StubMazeDisplay:
+        cols = 3
+        rows = 3
+
+        @staticmethod
+        def layout_for_window(width: int, height: int) -> tuple[float, float, float]:
+            del width
+            del height
+            return 20.0, 0.0, 0.0
+
+        @staticmethod
+        def cell_center(
+            width: int,
+            height: int,
+            cell_x: float,
+            cell_y: float,
+        ) -> tuple[float, float]:
+            del width
+            del height
+            return cell_x * 10.0 + 5.0, cell_y * 10.0 + 5.0
+
+    class _StubActor:
+        def __init__(self) -> None:
+            self.texture = SimpleNamespace(width=10)
+            self.scale = 1.0
+            self.center_x = 0.0
+            self.center_y = 0.0
+            self.speed: float | None = None
+
+        def set_speed(self, speed: float) -> None:
+            self.speed = speed
+
+    class _StubMovement:
+        def __init__(self) -> None:
+            self.reset_direction: tuple[int, int] | None = None
+
+        def reset(self, direction: tuple[int, int]) -> None:
+            self.reset_direction = direction
+
+    class _StubGhost(_StubActor):
+        def __init__(self) -> None:
+            super().__init__()
+            self.respawn_calls: list[tuple[float, float, int]] = []
+
+        def respawn(self, center_x: float, center_y: float, cell_value: int) -> None:
+            self.respawn_calls.append((center_x, center_y, cell_value))
+
+    view = cast(Any, object.__new__(GameView))
+    view.window = SimpleNamespace(width=120, height=120)
+    view._maze_display = _StubMazeDisplay()
+    view._player_cell_x = 1
+    view._player_cell_y = 1
+    view._player = _StubActor()
+    view._maze_grid = (
+        (0, 0, 0),
+        (0, 0, 0),
+        (0, 0, 0),
+    )
+    view._movement = _StubMovement()
+    view._rebuild_wall_colliders = lambda: None
+    view._items = []
+    view._all_item_cells = ()
+    ghost = _StubGhost()
+    view._ghosts = [ghost]
+    view._ghost_cells = ((2.0, 1.0),)
+
+    GameView._sync_entities_to_maze(view)
+
+    assert ghost.respawn_calls == [(25.0, 15.0, 0)]

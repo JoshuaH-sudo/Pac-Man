@@ -473,14 +473,14 @@ class GameView(arcade.View):
                 1.0, float(ghost.texture.width)
             )
             ghost.set_speed(cell_size * GHOST_SPEED_RATIO)
-            ghost.center_x, ghost.center_y = self._maze_display.cell_center(
+            center_x, center_y = self._maze_display.cell_center(
                 self.window.width,
                 self.window.height,
                 cell_x,
                 cell_y,
             )
             cell_value = int(self._maze_grid[int(cell_y)][int(cell_x)])
-            ghost.set_spawn_direction(cell_value)
+            ghost.respawn(center_x=center_x, center_y=center_y, cell_value=cell_value)
 
     def _update_ghosts(self) -> None:
         """Delegate maze-aware movement updates to ghost entities."""
