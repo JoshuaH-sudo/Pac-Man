@@ -282,6 +282,7 @@ class GameView(arcade.View):
             return
 
         self._update_ghost_vulnerability(delta_time)
+        self._update_ghost_respawns(delta_time)
 
         prev_x = self._player.center_x
         prev_y = self._player.center_y
@@ -311,6 +312,7 @@ class GameView(arcade.View):
 
         self._update_ghosts()
         self._ghosts.update()
+        self._collect_ghost_collisions()
 
         self._player.snap_to_lane(
             direction=direction,
@@ -482,14 +484,14 @@ class GameView(arcade.View):
                 1.0, float(ghost.texture.width)
             )
             ghost.set_speed(cell_size * GHOST_SPEED_RATIO)
-            ghost.center_x, ghost.center_y = self._maze_display.cell_center(
+            center_x, center_y = self._maze_display.cell_center(
                 self.window.width,
                 self.window.height,
                 cell_x,
                 cell_y,
             )
             cell_value = int(self._maze_grid[int(cell_y)][int(cell_x)])
-            ghost.set_spawn_direction(cell_value)
+            ghost.respawn(center_x=center_x, center_y=center_y, cell_value=cell_value)
 
     def _update_ghosts(self) -> None:
         """Delegate maze-aware movement updates to ghost entities."""
@@ -503,17 +505,21 @@ class GameView(arcade.View):
         player_cell_x, player_cell_y = self._current_cell_indices()
         player_direction = self._movement.current_direction
 
-        ghost_cells = [
-            self._cell_indices_for_position(ghost.center_x, ghost.center_y)
-            for ghost in self._ghosts
-        ]
-        blinky_cell = (
-            ghost_cells[0] if ghost_cells else (player_cell_x, player_cell_y)
-        )
+        ghost_cells: dict[int, tuple[int, int]] = {}
+        for index, ghost in enumerate(self._ghosts):
+            if ghost.is_eaten:
+                continue
+            ghost_cells[index] = self._cell_indices_for_position(
+                ghost.center_x,
+                ghost.center_y,
+            )
 
-        for index, (ghost, (cell_x, cell_y)) in enumerate(
-            zip(self._ghosts, ghost_cells)
-        ):
+        blinky_cell = ghost_cells.get(0, (player_cell_x, player_cell_y))
+
+        for index, ghost in enumerate(self._ghosts):
+            if ghost.is_eaten:
+                continue
+            cell_x, cell_y = ghost_cells[index]
             cell_value = int(self._maze_grid[cell_y][cell_x])
             target_cell_x, target_cell_y = self._target_tile_for_ghost(
                 ghost_index=index,
@@ -545,6 +551,52 @@ class GameView(arcade.View):
                 target_cell_x=target_cell_x,
                 target_cell_y=target_cell_y,
             )
+
+    def _collect_ghost_collisions(self) -> None:
+        """Resolve player interactions with ghosts.
+
+        Vulnerable ghosts are eaten and respawn after a delay; otherwise,
+        the player loses a life and entities reset to spawn.
+        """
+        for ghost in self._ghosts:
+            if ghost.is_eaten:
+                continue
+            if not arcade.check_for_collision(self._player, ghost):
+                continue
+
+            if self._ghost_vulnerability_remaining > 0.0 and ghost.is_vulnerable:
+                ghost.mark_eaten(self.config.ghost_respawn_delay_seconds)
+                self.state.score += max(0, self.config.points_per_ghost)
+                continue
+
+            self.state.lose_life()
+            self._ghost_vulnerability_remaining = 0.0
+            self._set_all_ghosts_vulnerable(False)
+            if self.state.lives > 0:
+                self._sync_entities_to_maze()
+            return
+
+    def _update_ghost_respawns(self, delta_time: float) -> None:
+        """Return eaten ghosts to their spawn corners after a delay."""
+        if self.window is None or self._maze_display is None:
+            return
+
+        for ghost, (cell_x, cell_y) in zip(self._ghosts, self._ghost_cells):
+            if not ghost.is_eaten:
+                continue
+            if not ghost.advance_respawn_timer(delta_time):
+                continue
+
+            center_x, center_y = self._maze_display.cell_center(
+                self.window.width,
+                self.window.height,
+                cell_x,
+                cell_y,
+            )
+            cell_value = int(self._maze_grid[int(cell_y)][int(cell_x)])
+            ghost.respawn(center_x=center_x, center_y=center_y, cell_value=cell_value)
+            if self._ghost_vulnerability_remaining > 0.0:
+                ghost.set_vulnerable(True)
 
     def _target_tile_for_ghost(
         self,
