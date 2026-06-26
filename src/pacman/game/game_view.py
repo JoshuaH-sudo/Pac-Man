@@ -727,7 +727,15 @@ class GameView(arcade.View):
             isinstance(spawn_cell, tuple)
             and len(spawn_cell) == 2
         ):
-            return float(spawn_cell[0]), float(spawn_cell[1])
+            try:
+                return float(spawn_cell[0]), float(spawn_cell[1])
+            except (TypeError, ValueError) as exc:
+                raise RuntimeError(
+                    f"Sprite {item!r} has no valid _spawn_cell "
+                    f"(got {spawn_cell!r}); "
+                    "_spawn_cell must be a tuple of two numeric values "
+                    "set via _set_item_spawn_cell at creation time."
+                ) from exc
         raise RuntimeError(
             f"Sprite {item!r} has no valid _spawn_cell "
             f"(got {spawn_cell!r}); "
