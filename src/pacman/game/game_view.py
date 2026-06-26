@@ -729,8 +729,10 @@ class GameView(arcade.View):
         ):
             return float(spawn_cell[0]), float(spawn_cell[1])
         raise RuntimeError(
-            f"Sprite {item!r} has no valid _spawn_cell; "
-            "ensure _set_item_spawn_cell is called at creation time."
+            f"Sprite {item!r} has no valid _spawn_cell "
+            f"(got {spawn_cell!r}); "
+            "_spawn_cell must be a tuple of two numeric values "
+            "set via _set_item_spawn_cell at creation time."
         )
 
     def _update_ghost_vulnerability(self, delta_time: float) -> None:
