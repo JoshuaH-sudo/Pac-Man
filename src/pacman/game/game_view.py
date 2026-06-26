@@ -723,6 +723,12 @@ class GameView(arcade.View):
     def _item_spawn_cell(item: arcade.Sprite) -> tuple[float, float]:
         """Return the original spawn cell for an item sprite."""
         spawn_cell = getattr(item, "_spawn_cell", None)
+        _err = (
+            f"Sprite {item!r} has no valid _spawn_cell "
+            f"(got {spawn_cell!r}); "
+            "_spawn_cell must be a tuple of two numeric values "
+            "set via _set_item_spawn_cell at creation time."
+        )
         if (
             isinstance(spawn_cell, tuple)
             and len(spawn_cell) == 2
@@ -730,18 +736,8 @@ class GameView(arcade.View):
             try:
                 return float(spawn_cell[0]), float(spawn_cell[1])
             except (TypeError, ValueError) as exc:
-                raise RuntimeError(
-                    f"Sprite {item!r} has no valid _spawn_cell "
-                    f"(got {spawn_cell!r}); "
-                    "_spawn_cell must be a tuple of two numeric values "
-                    "set via _set_item_spawn_cell at creation time."
-                ) from exc
-        raise RuntimeError(
-            f"Sprite {item!r} has no valid _spawn_cell "
-            f"(got {spawn_cell!r}); "
-            "_spawn_cell must be a tuple of two numeric values "
-            "set via _set_item_spawn_cell at creation time."
-        )
+                raise RuntimeError(_err) from exc
+        raise RuntimeError(_err)
 
     def _update_ghost_vulnerability(self, delta_time: float) -> None:
         """Expire ghost vulnerability state when the super-pacgum window ends."""
