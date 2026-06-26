@@ -342,7 +342,9 @@ def test_sync_entities_to_maze_keeps_remaining_item_spawn_cells() -> None:
             del direction
 
     class _StubItem(_StubActor):
-        pass
+        def __init__(self) -> None:
+            super().__init__()
+            self._spawn_cell: tuple[float, float] = (0.0, 0.0)
 
     view = cast(Any, object.__new__(GameView))
     view.window = SimpleNamespace(width=120, height=120)
@@ -360,8 +362,6 @@ def test_sync_entities_to_maze_keeps_remaining_item_spawn_cells() -> None:
     view._ghosts = []
     view._ghost_cells = ()
 
-    eaten_item = _StubItem()
-    eaten_item._spawn_cell = (0.0, 0.0)
     remaining_item = _StubItem()
     remaining_item._spawn_cell = (2.0, 1.0)
     view._items = [remaining_item]

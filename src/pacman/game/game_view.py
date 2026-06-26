@@ -226,13 +226,13 @@ class GameView(arcade.View):
             self._set_item_spawn_cell(item, cell_x, cell_y)
             self._items.append(item)
         for cell_x, cell_y in self._super_item_cells:
-            item = SuperPacgum(
+            super_item = SuperPacgum(
                 center_x=0.0,
                 center_y=0.0,
                 scale=1.0,
             )
-            self._set_item_spawn_cell(item, cell_x, cell_y)
-            self._items.append(item)
+            self._set_item_spawn_cell(super_item, cell_x, cell_y)
+            self._items.append(super_item)
 
         # Initialize movement controller
         center_cell_value = int(
@@ -728,7 +728,10 @@ class GameView(arcade.View):
             and len(spawn_cell) == 2
         ):
             return float(spawn_cell[0]), float(spawn_cell[1])
-        return 0.0, 0.0
+        raise RuntimeError(
+            f"Sprite {item!r} has no valid _spawn_cell; "
+            "ensure _set_item_spawn_cell is called at creation time."
+        )
 
     def _update_ghost_vulnerability(self, delta_time: float) -> None:
         """Expire ghost vulnerability state when the super-pacgum window ends."""
