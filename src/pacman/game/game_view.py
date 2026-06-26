@@ -217,22 +217,22 @@ class GameView(arcade.View):
         self._items.clear()
 
         # Create new items for this level
-        for _ in self._item_cells:
-            self._items.append(
-                Pacgum(
-                    center_x=0.0,
-                    center_y=0.0,
-                    scale=1.0,
-                )
+        for cell_x, cell_y in self._item_cells:
+            item = Pacgum(
+                center_x=0.0,
+                center_y=0.0,
+                scale=1.0,
             )
-        for _ in self._super_item_cells:
-            self._items.append(
-                SuperPacgum(
-                    center_x=0.0,
-                    center_y=0.0,
-                    scale=1.0,
-                )
+            self._set_item_spawn_cell(item, cell_x, cell_y)
+            self._items.append(item)
+        for cell_x, cell_y in self._super_item_cells:
+            item = SuperPacgum(
+                center_x=0.0,
+                center_y=0.0,
+                scale=1.0,
             )
+            self._set_item_spawn_cell(item, cell_x, cell_y)
+            self._items.append(item)
 
         # Initialize movement controller
         center_cell_value = int(
@@ -466,7 +466,8 @@ class GameView(arcade.View):
         )
         self._movement.reset(choose_initial_direction(center_cell_value))
 
-        for item, (cell_x, cell_y) in zip(self._items, self._all_item_cells):
+        for item in self._items:
+            cell_x, cell_y = self._item_spawn_cell(item)
             item.scale = (cell_size * ITEM_CELL_FRACTION) / max(
                 1.0, float(item.texture.width)
             )
@@ -708,6 +709,26 @@ class GameView(arcade.View):
                     if self.config is not None
                     else Pacgum.POINT_VALUE
                 )
+
+    @staticmethod
+    def _set_item_spawn_cell(
+        item: arcade.Sprite,
+        cell_x: float,
+        cell_y: float,
+    ) -> None:
+        """Store the original maze cell for an item spawn position."""
+        setattr(item, "_spawn_cell", (cell_x, cell_y))
+
+    @staticmethod
+    def _item_spawn_cell(item: arcade.Sprite) -> tuple[float, float]:
+        """Return the original spawn cell for an item sprite."""
+        spawn_cell = getattr(item, "_spawn_cell", None)
+        if (
+            isinstance(spawn_cell, tuple)
+            and len(spawn_cell) == 2
+        ):
+            return float(spawn_cell[0]), float(spawn_cell[1])
+        return 0.0, 0.0
 
     def _update_ghost_vulnerability(self, delta_time: float) -> None:
         """Expire ghost vulnerability state when the super-pacgum window ends."""
