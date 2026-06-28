@@ -1,0 +1,25 @@
+PAC-MAN QUICK START
+
+This build is intended for private/unlisted release testing.
+
+Controls
+- Move: Arrow keys or WASD
+- Pause: P or Pause button
+- Menu navigation: Mouse clicks
+
+Gameplay
+- Eat all pacgums to clear the level.
+- Super-pacgums make ghosts vulnerable for a short time.
+- You lose a life if a non-vulnerable ghost touches Pac-Man.
+- Finish all configured levels to win.
+
+Config
+- You can optionally place a config.json next to the executable.
+- If no external config is present, the bundled config.example.json is used.
+- Highscores are always written to your user data directory.
+
+Cheat mode (for peer evaluation)
+- Toggle cheat mode: C
+- Force lose screen: O
+- Force victory screen: V
+- Skip to next level: N

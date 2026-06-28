@@ -31,6 +31,27 @@ make run
 make debug
 ```
 
+### Build a distributable package (private/unlisted release)
+```bash
+make package
+```
+
+This generates a fully runnable build in `dist/pac-man/` using the root
+`pacman.spec` and `build_package.sh` files.
+
+To upload for private testing (Itch.io or Steam private branch), archive the
+`dist/pac-man/` folder and upload it as your build artifact.
+
+The package includes:
+- game executable (`pac-man`)
+- sprites and runtime assets
+- `PACKAGED-INSTRUCTIONS.txt` (minimal controls/options/config notes)
+- bundled default config (`config.example.json`)
+
+At runtime, the packaged launcher writes highscores and runtime config to a
+user-writable application data directory, so the game remains fully functional
+after installation.
+
 ### Lint / Type-check
 ```bash
 make lint
@@ -67,6 +88,9 @@ Default keys:
 - `level_max_time`: `90`
 
 A template file is provided at `config.example.json`.
+
+For packaged builds, you can place an optional `config.json` next to the
+executable to override defaults without rebuilding.
 
 ## Highscore
 Highscores are stored in JSON (`highscores.json` by default).
