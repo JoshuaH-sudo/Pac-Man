@@ -77,6 +77,8 @@ class GameView(arcade.View):
         self.main_menu = main_menu
 
         self.cheat_mode = False
+        self.prev_lives = self.state.lives
+        self.prev_time = self.state.timer
 
         # Initialize entity sprite lists (empty, will be populated by _load_level)
         self._player = Pacman(
@@ -269,13 +271,17 @@ class GameView(arcade.View):
         self._items.draw()
         self._players.draw()
         self._ghosts.draw()
-        self._update_label_text(self._timer_label, f"Timer: {int(self.state.timer)}")
+
+        if self.cheat_mode:
+            self.cheat_mode_text.draw()
+            display_time = float("inf")
+        else:
+            display_time = int(self.state.timer)
+        self._update_label_text(self._timer_label, f"Timer: {display_time}")
         self._update_label_text(self._score_label, f"Score: {self.state.score}")
         self._update_label_text(self._lives_label, f"Lives: {self.state.lives}")
         self._update_label_text(self._level_label, f"Level: {self.state.level}")
         self.manager.draw()
-        if self.cheat_mode:
-            self.cheat_mode_text.draw()
 
     def on_update(self, delta_time: float) -> None:
         if self.window is None or self._maze_display is None:
@@ -393,9 +399,17 @@ class GameView(arcade.View):
         if not self.cheat_mode:
             if symbol == arcade.key.C:
                 self.cheat_mode = True
+
+                self.prev_lives = self.state.lives
+                self.state.lives = float("inf")
+
+                self.prev_time = self.state.timer
+                self.state.timer = float("inf")
         else:
             if symbol == arcade.key.C:
                 self.cheat_mode = False
+                self.state.lives = self.prev_lives
+                self.state.timer = self.prev_time
 
             # Shortcut to pause and end screens
             if symbol == arcade.key.O:
