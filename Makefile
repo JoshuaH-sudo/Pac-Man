@@ -1,4 +1,4 @@
-.PHONY: install run debug clean lint lint-strict test package fclean
+.PHONY: install run debug clean lint lint-strict test package release-macos fclean
 
 # Using UV_SKIP_WHEEL_FILENAME_CHECK=1 to work around a known issue with uv and certain wheel filenames.
 UV = UV_SKIP_WHEEL_FILENAME_CHECK=1 uv
@@ -29,6 +29,9 @@ test:
 
 package:
 	./build_package.sh
+
+release-macos:
+	./build_release_macos.sh
 
 fclean: clean
 	uv cache clean
