@@ -119,7 +119,7 @@ def test_invalid_levels(tmp_path: Path,
     out = capsys.readouterr().err
     assert "default" in out
     assert len(loaded.levels) == 10
-    assert loaded.levels == [(21, 21)] * 10
+    assert loaded.levels == [(14, 14)] * 10
     assert loaded.points_per_ghost == 50
 
 
@@ -148,7 +148,7 @@ def test_invalid_level_dim(tmp_path: Path,
     out = capsys.readouterr().err
     assert "default" in out
     assert len(loaded.levels) == 10
-    assert loaded.levels[0] == (21, 21)
+    assert loaded.levels[0] == (14, 14)
     assert loaded.levels[9] == (29, 29)
     assert loaded.points_per_ghost == 50
 
@@ -176,7 +176,7 @@ def test_at_least_10_levels(tmp_path: Path,
     assert "default" in out
     assert len(loaded.levels) == 10
     assert loaded.levels[0] == (20, 20)
-    assert loaded.levels[9] == (21, 21)
+    assert loaded.levels[9] == (14, 14)
     assert loaded.points_per_ghost == 50
 
 

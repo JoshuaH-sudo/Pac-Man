@@ -101,6 +101,12 @@ class Parser:
             "level_max_time": _DEFAULT_CONFIG.level_max_time,
         }
 
+        all_keys = list(_INT_FIELDS) + ["highscore_filename", "levels"]
+        for key in all_keys:
+            if key not in parsed.keys():
+                self._print_config_error(f"{key} not defined in {self.config_path}. "
+                                         "Using the default value instead.")
+
         for key, value in parsed.items():
             key = key.lower()
             if key in _INT_FIELDS:
