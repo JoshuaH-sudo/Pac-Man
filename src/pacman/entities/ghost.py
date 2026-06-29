@@ -108,6 +108,7 @@ class Ghost(Entity):
         self.visible = True
         self.set_animation_frame("idle")
         self.set_spawn_direction(cell_value)
+        self.move(0, 0)
 
     def move(self, horizontal: int, vertical: int) -> None:
         """Set movement direction for the current update loop."""

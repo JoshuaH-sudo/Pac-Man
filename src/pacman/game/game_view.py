@@ -40,6 +40,8 @@ if TYPE_CHECKING:
 
 LOGGER = logging.getLogger(__name__)
 GHOST_VULNERABILITY_DURATION_SECONDS = 6.0
+CHEAT_MODE_LIVES = 9999
+CHEAT_MODE_TIMER = 9999.0
 GHOST_SPRITE_SHEETS: tuple[str, ...] = (
     "Blinky.png",
     "Pinky.png",
@@ -67,6 +69,10 @@ def _env_flag_is_enabled(name: str) -> bool:
 
 class GameView(arcade.View):
     """Main game view that renders maze, entities, and update loop."""
+
+    GHOST_APPEARANCE_DELAY_SECONDS = 5
+    GHOST_WAITING_ALPHA = 96
+    GHOST_FLASH_INTERVAL_SECONDS = 0.25
 
     def __init__(self, config: GameConfig, state: GameState,
                  main_menu: "MainMenu | None" = None) -> None:
@@ -119,6 +125,9 @@ class GameView(arcade.View):
         self._ghost_cells: tuple[tuple[float, float], ...] = ()
         self._initialized = False
         self._level_loaded = False
+        self._ghost_spawn_reveal_remaining = 0.0
+        self._ghost_spawn_reveal_index = 0
+        self._ghost_spawn_flash_elapsed = 0.0
 
         # Movement controller will be initialized in _load_level
         self._movement = MovementController((0, 0))
@@ -249,6 +258,7 @@ class GameView(arcade.View):
         self._set_all_ghosts_vulnerable(False)
 
         self._level_loaded = True
+        self._start_ghost_spawn_sequence()
 
     def on_show_view(self) -> None:
         arcade.set_background_color(arcade.color.DARK_BLUE_GRAY)
@@ -287,6 +297,7 @@ class GameView(arcade.View):
         if self.window is None or self._maze_display is None:
             return
 
+        self._update_ghost_spawn_sequence(delta_time)
         self._update_ghost_vulnerability(delta_time)
         self._update_ghost_respawns(delta_time)
 
@@ -401,10 +412,10 @@ class GameView(arcade.View):
                 self.cheat_mode = True
 
                 self.prev_lives = self.state.lives
-                self.state.lives = float("inf")
+                self.state.lives = CHEAT_MODE_LIVES
 
                 self.prev_time = self.state.timer
-                self.state.timer = float("inf")
+                self.state.timer = CHEAT_MODE_TIMER
         else:
             if symbol == arcade.key.C:
                 self.cheat_mode = False
@@ -508,6 +519,61 @@ class GameView(arcade.View):
             cell_value = int(self._maze_grid[int(cell_y)][int(cell_x)])
             ghost.respawn(center_x=center_x, center_y=center_y, cell_value=cell_value)
 
+        self._start_ghost_spawn_sequence()
+
+    def _start_ghost_spawn_sequence(self) -> None:
+        """Show level-start ghosts and reveal movement one by one."""
+        self._ghost_spawn_reveal_index = 1
+        self._ghost_spawn_reveal_remaining = self.GHOST_APPEARANCE_DELAY_SECONDS
+        self._ghost_spawn_flash_elapsed = 0.0
+        for index, ghost in enumerate(self._ghosts):
+            if ghost.is_eaten:
+                continue
+            ghost.visible = True
+            ghost.move(0, 0)
+            ghost.alpha = 255 if index == 0 else self.GHOST_WAITING_ALPHA
+
+    def _update_ghost_spawn_sequence(self, delta_time: float) -> None:
+        """Reveal ghosts one at a time while waiting ghosts flash translucent."""
+        if self._maze_display is None or self.window is None:
+            return
+
+        if self._ghost_spawn_reveal_index >= len(self._ghosts):
+            for ghost in self._ghosts:
+                if not ghost.is_eaten:
+                    ghost.alpha = 255
+            return
+
+        self._ghost_spawn_flash_elapsed += delta_time
+        self._ghost_spawn_reveal_remaining = max(
+            0.0,
+            self._ghost_spawn_reveal_remaining - delta_time,
+        )
+
+        waiting_alpha = (
+            255
+            if int(self._ghost_spawn_flash_elapsed / self.GHOST_FLASH_INTERVAL_SECONDS)
+            % 2 == 0
+            else self.GHOST_WAITING_ALPHA
+        )
+        for index, ghost in enumerate(self._ghosts):
+            if ghost.is_eaten:
+                continue
+            if index < self._ghost_spawn_reveal_index:
+                ghost.alpha = 255
+            else:
+                ghost.visible = True
+                ghost.alpha = waiting_alpha
+
+        if self._ghost_spawn_reveal_remaining > 0.0:
+            return
+
+        ghost = self._ghosts[self._ghost_spawn_reveal_index]
+        ghost.visible = True
+        ghost.alpha = 255
+        self._ghost_spawn_reveal_index += 1
+        self._ghost_spawn_reveal_remaining = self.GHOST_APPEARANCE_DELAY_SECONDS
+
     def _update_ghosts(self) -> None:
         """Delegate maze-aware movement updates to ghost entities."""
         if self.window is None or self._maze_display is None:
@@ -524,6 +590,9 @@ class GameView(arcade.View):
         for index, ghost in enumerate(self._ghosts):
             if ghost.is_eaten:
                 continue
+            if index >= self._ghost_spawn_reveal_index:
+                ghost.move(0, 0)
+                continue
             ghost_cells[index] = self._cell_indices_for_position(
                 ghost.center_x,
                 ghost.center_y,
@@ -533,6 +602,8 @@ class GameView(arcade.View):
 
         for index, ghost in enumerate(self._ghosts):
             if ghost.is_eaten:
+                continue
+            if index not in ghost_cells:
                 continue
             cell_x, cell_y = ghost_cells[index]
             cell_value = int(self._maze_grid[cell_y][cell_x])
@@ -573,7 +644,9 @@ class GameView(arcade.View):
         Vulnerable ghosts are eaten and respawn after a delay; otherwise,
         the player loses a life and entities reset to spawn.
         """
-        for ghost in self._ghosts:
+        for index, ghost in enumerate(self._ghosts):
+            if index >= self._ghost_spawn_reveal_index:
+                continue
             if ghost.is_eaten:
                 continue
             if not arcade.check_for_collision(self._player, ghost):
