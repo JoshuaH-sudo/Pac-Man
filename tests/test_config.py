@@ -146,11 +146,27 @@ def test_invalid_level_dim(tmp_path: Path,
     loaded = parser.load_config()
 
     out = capsys.readouterr().err
-    assert "default" in out
+    assert "default" in out.lower()
     assert len(loaded.levels) == 10
     assert loaded.levels[0] == (14, 14)
     assert loaded.levels[9] == (29, 29)
     assert loaded.points_per_ghost == 50
+
+
+def test_level_dimensions_are_clamped_to_safe_range(tmp_path: Path,
+                                                    capsys: pytest.CaptureFixture[str]) -> None:
+    config_file = tmp_path / "config.json"
+    config_file.write_text(
+        "{\n  \"levels\": [{\"width\": 100, \"height\": -3}]\n}\n",
+        encoding="utf-8",
+    )
+
+    parser = Parser(config_file)
+    loaded = parser.load_config()
+
+    out = capsys.readouterr().err
+    assert "default" in out.lower()
+    assert loaded.levels[0] == (14, 14)
 
 
 def test_at_least_10_levels(tmp_path: Path,

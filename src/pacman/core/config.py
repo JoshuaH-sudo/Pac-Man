@@ -37,9 +37,13 @@ class GameConfig(BaseModel):
             if x < 1:
                 raise ValueError(f"Invalid maze width for level {i + 1}. "
                                  "Maze width needs to be a positive integer.")
+            if x > 40:
+                raise ValueError(f"Maze width for level {i + 1} too big.")
             if y < 1:
                 raise ValueError(f"Invalid maze height for level {i + 1}. "
                                  "Maze width needs to be a positive integer.")
+            if y > 40:
+                raise ValueError(f"Maze height for level {i + 1} too big.")
 
         if len(self.levels) < _MIN_LEVELS:
             raise ValueError(f"There must be at least {_MIN_LEVELS} levels.")
@@ -149,9 +153,18 @@ class Parser:
                                        "Using default value instead.")
             return default
 
-        if key == "lives" or key == "levels":
+        if key == "lives":
             if v < 1:
                 Parser._print_config_error(f"Value of {key} is too small. "
+                                           "Using default value instead.")
+                return default
+        elif key == "levels":
+            if v < 1:
+                Parser._print_config_error(f"Value of {key} is too small. "
+                                           "Using default value instead.")
+                return default
+            if v > 40:
+                Parser._print_config_error(f"Value of {key} is too big. "
                                            "Using default value instead.")
                 return default
         else:
