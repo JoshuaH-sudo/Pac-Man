@@ -52,21 +52,6 @@ At runtime, the packaged launcher writes highscores and runtime config to a
 user-writable application data directory, so the game remains fully functional
 after installation.
 
-### Build a notarized macOS release
-```bash
-make release-macos
-```
-
-This command builds the package, signs the app payload, creates a DMG, submits
-it to Apple notarization, and staples the ticket to the final artifact.
-
-Required environment variables:
-- `APPLE_SIGN_IDENTITY`: your Developer ID Application certificate name
-- `NOTARY_KEYCHAIN_PROFILE`: your `xcrun notarytool` keychain profile name
-
-The final distributable is written to `release/pac-man-macos.dmg`.
-Use this path for Gatekeeper-friendly uploads to a store or private share.
-
 ### Lint / Type-check
 ```bash
 make lint
