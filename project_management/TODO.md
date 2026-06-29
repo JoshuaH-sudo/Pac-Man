@@ -25,12 +25,12 @@ This checklist is organized to match the subject requirements and the current re
 - [ ] Convert generated maze data into game tiles, spawn points, corridors, and walls.
 - [ ] Add tests for adapter behavior where feasible.
 
-## 4. Core Game Loop and State Machine (yanlu 05.06 - )
+## 4. Core Game Loop and State Machine (yanlu 05.06 - 25.06.)
 - [x] Implement a main state machine for menu, gameplay, pause, game over, victory, and highscore entry.
 - [x] Make the flow follow: Main Menu -> Start Game -> Win/Lose -> Enter Name -> Back to Main Menu.
 - [x] Keep score, lives, level number, and time remaining in a central game session model.
-- [ ] Preserve score and remaining lives across levels.
-- [ ] Return cleanly to the main menu after a finished run.
+- [x] Preserve score and remaining lives across levels.
+- [x] Return cleanly to the main menu after a finished run.
 
 ## 5. Player Mechanics
 - [ ] Spawn the player at the maze center.
@@ -57,14 +57,14 @@ This checklist is organized to match the subject requirements and the current re
 - [ ] Make edible ghosts flee or behave differently from chase mode.
 - [ ] Respawn eaten ghosts after a delay at their home corner.
 
-## 8. Level Progression (yanlu 24.06 - )
-- [ ] Support at least 10 levels.
+## 8. Level Progression (yanlu 24.06 - 25.06.)
+- [x] Support at least 10 levels.
 - [x] Use a fixed seed for level 1.
-- [ ] Use random generation for later levels.
-- [ ] Add a per-level time limit.
+- [x] Use random generation for later levels.
+- [x] Add a per-level time limit.
 - [x] Decide and implement timeout behavior.
 - [x] Move to the next level on completion.
-- [ ] End the game with victory after the final level.
+- [x] End the game with victory after the final level.
 
 ## 9. User Interface (yanlu)
 - [x] Build a main menu with Start Game, View Highscores, Instructions, and Exit. (05.06.-07.06.)
@@ -83,12 +83,12 @@ This checklist is organized to match the subject requirements and the current re
 - [x] Keep only the top 10 sorted entries.
 - [x] Display highscores from the main menu.
 
-## 11. Cheat Mode for Evaluation
-- [ ] Add a clear way to activate cheat mode.
-- [ ] Implement invincibility.
-- [ ] Implement level skip.
+## 11. Cheat Mode for Evaluation (yanlu 25.06. - 29.06)
+- [x] Add a clear way to activate cheat mode.
+- [x] Implement invincibility.
+- [x] Implement level skip.
 - [ ] Implement ghost freeze.
-- [ ] Implement extra lives.
+- [x] Implement extra lives.
 - [ ] Optionally implement increased player speed or another reviewer-friendly helper.
 - [ ] Document cheat controls for peer review.
 

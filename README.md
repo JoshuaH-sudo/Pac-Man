@@ -3,13 +3,8 @@
 # Pac-Man
 
 ## Description
-This repository contains a UV-managed Python skeleton for the 42 Pac-Man project.
-It sets up package structure, configuration loading, highscore persistence, CLI entrypoint,
-and the required quality tooling (flake8 + mypy) to support iterative game implementation.
-
-## Project Management
-Project management evidence is stored in `project_management/`
-Link to Trello board: https://trello.com/b/ltiY3yB4/pac-man-42-project
+This project recreates a complete and playable Pac-Man game in Python, using
+object-oriented programming, the graphical library `arcade`, and a modular, reusable architecture.
 
 ## Instructions
 ### Requirements
@@ -55,10 +50,9 @@ Unknown keys are ignored, and invalid values fall back to safe defaults.
 Default keys:
 - `highscore_filename`: `"highscores.json"`
 - `levels`:
-    - `width`: `21`
-    - `height`: `21`
+    - `width`: `14`
+    - `height`: `14`
 - `lives`: `3`
-- `pacgum`: `42`
 - `points_per_pacgum`: `10`
 - `points_per_super_pacgum`: `50`
 - `points_per_ghost`: `200`
@@ -67,6 +61,31 @@ Default keys:
 - `level_max_time`: `90`
 
 A template file is provided at `config.example.json`.
+
+## In game controls
+Press the arrow keys or WASD to move the player.
+
+Eating pacgums will increase your score.
+
+Touching a ghost will make you lose one life.
+
+Eating a super-pacgum will make the ghost edible for a short period.
+
+Ghosts will respawn after a while after being eaten.
+
+To complete a level, eat all pacgums in the level within the time limit and without losing all lives.
+
+To win the game, complete all levels.
+
+Game over if you fail to complete a level within the time limit or lost all lives
+
+## Cheat mode
+Press the `C` key in game to activate cheat mode and press again to deactivate it.
+
+In cheat mode, player will have infinite lives and infinite time, and can:
+- Press `N` to immediately advance to the next level.
+- Press `O` to immediately lose the game.
+- Press `V` to immediately win the game.
 
 ## Highscore
 Highscores are stored in JSON (`highscores.json` by default).
@@ -95,13 +114,11 @@ This structure is intended to extend cleanly with future gameplay modules
 (renderer, entities, ghost AI, menus, level manager, and maze adapter).
 
 ## Project Management
-Project-management evidence should be stored in:
-- `project_management/`
+The project progress is managed using Trello board: https://trello.com/b/ltiY3yB4/pac-man-42-project
 
-See `project_management/README.md` for scope.
+Additional project-management evidence is stored in `project_management/`
 
 ## Resources
-- 42 project subject (Pacman: Ghosts! More ghosts!)
 - Python docs: https://docs.python.org/3/
 - UV docs: https://docs.astral.sh/uv/
 - flake8 docs: https://flake8.pycqa.org/
