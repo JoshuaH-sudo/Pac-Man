@@ -33,12 +33,12 @@ class InstructionView(arcade.View):
         )
         for line in [
             "Use arrow keys or WASD to move Pac-Man.",
-            "Press P (or Pause button) to pause and resume safely.",
+            "Press P (or Pause/Break) to pause and resume safely.",
             "Eat all pacgums within the time limit to complete the level.",
             "Eat a super-pacgum to make ghosts edible.",
             "Avoid ghosts — you lose a life when touched by a ghost.",
             "Game over when all lives are lost.",
-            "Peer-evaluation shortcuts: C toggle cheat mode, N next level.",
+            "Peer-evaluation shortcuts: C to toggle cheat mode, N next level.",
         ]:
             instructions_box.add(
                 arcade.gui.UILabel(

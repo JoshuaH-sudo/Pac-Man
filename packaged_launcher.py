@@ -32,7 +32,12 @@ def _user_data_dir() -> Path:
         base = Path(os.getenv("XDG_DATA_HOME", str(Path.home() / ".local" / "share")))
 
     target = base / app_name
-    target.mkdir(parents=True, exist_ok=True)
+    try:
+        target.mkdir(parents=True, exist_ok=True)
+    except OSError as exc:
+        raise RuntimeError(
+            f"Unable to create user data directory at '{target}'."
+        ) from exc
     return target
 
 
@@ -62,7 +67,12 @@ def _write_runtime_config() -> Path:
     config_data["highscore_filename"] = str(data_dir / "highscores.json")
 
     runtime_config = data_dir / "runtime-config.json"
-    runtime_config.write_text(json.dumps(config_data, indent=2), encoding="utf-8")
+    try:
+        runtime_config.write_text(json.dumps(config_data, indent=2), encoding="utf-8")
+    except OSError as exc:
+        raise RuntimeError(
+            f"Unable to write runtime config to '{runtime_config}'."
+        ) from exc
     return runtime_config
 
 

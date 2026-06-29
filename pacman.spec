@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
-project_root = Path.cwd()
+project_root = Path(__file__).resolve().parent
 
 block_cipher = None
 

@@ -20,6 +20,6 @@ Config
 
 Cheat mode (for peer evaluation)
 - Toggle cheat mode: C
-- Force lose screen: O
+- Force game-over screen: O
 - Force victory screen: V
 - Skip to next level: N
