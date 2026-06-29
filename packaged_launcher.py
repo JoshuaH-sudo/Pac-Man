@@ -29,7 +29,7 @@ def _user_data_dir() -> Path:
     elif os.name == "nt":
         base = Path(os.getenv("APPDATA", str(Path.home())))
     else:
-        base = Path.home() / ".local" / "share"
+        base = Path(os.getenv("XDG_DATA_HOME", str(Path.home() / ".local" / "share")))
 
     target = base / app_name
     target.mkdir(parents=True, exist_ok=True)
